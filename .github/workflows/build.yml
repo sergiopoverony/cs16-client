@@ -153,11 +153,20 @@ jobs:
           cmake --build .
           cpack --config CPackConfig.cmake
         working-directory: build
+      - name: Make slim package (CZDS)
+        shell: pwsh
+        run: |
+          $z = Get-ChildItem build/*.zip | Select-Object -First 1
+          Expand-Archive $z.FullName -DestinationPath slim_tmp
+          Get-ChildItem slim_tmp -Recurse -Include *.pdb,*.lib,*.exp,yapb.dll | Remove-Item -Force
+          Get-ChildItem slim_tmp -Recurse -File | ForEach-Object { $_.FullName.Substring((Resolve-Path slim_tmp).Path.Length) }
+          Compress-Archive -Path slim_tmp/* -DestinationPath CZDS-slim.zip -CompressionLevel Optimal
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-${{ matrix.arch }}
-          path: build/*.zip
+          path: CZDS-slim.zip
+          compression-level: 0
   linux:
     name: Linux
     if: false  # CZDS: only Windows x86 for fast iterations
