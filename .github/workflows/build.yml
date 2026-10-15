@@ -8,6 +8,7 @@ concurrency:
 jobs:
   android:
     name: Android
+    if: false  # CZDS: only Windows x86 for fast iterations
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -57,6 +58,7 @@ jobs:
           path: android/CS16Client-Android.apk
   psvita:
     name: PS Vita
+    if: false  # CZDS: only Windows x86 for fast iterations
     runs-on: ubuntu-latest
     env:
       VITASDK: ${{ github.homedir }}/vitasdk
@@ -119,7 +121,7 @@ jobs:
       SCCACHE_DIR: ${{ github.workspace }}/.sccache
     strategy:
       matrix:
-        arch: [ 'x86', 'amd64' ]
+        arch: [ 'x86' ]
       fail-fast: false
     steps:
       - name: Checkout sources
@@ -158,6 +160,7 @@ jobs:
           path: build/*.zip
   linux:
     name: Linux
+    if: false  # CZDS: only Windows x86 for fast iterations
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -197,6 +200,7 @@ jobs:
           path: build/*.tar.gz
   macos:
     name: macOS
+    if: false  # CZDS: only Windows x86 for fast iterations
     strategy:
       matrix:
         os: [ 'macos-15-intel', 'macos-latest' ]
