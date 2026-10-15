@@ -1898,6 +1898,10 @@ void V_Init (void)
 	cl_chasedist		= gEngfuncs.pfnRegisterVariable( "cl_chasedist","112", 0 );
 	cz_viewadd			= gEngfuncs.pfnRegisterVariable( "cz_viewadd", !strcmp( gEngfuncs.pfnGetGameDirectory(), "czeror" ) ? "11" : "0", FCVAR_ARCHIVE );
 
+	// CZ:DS: client weapon prediction crashes (cs_weapons) in czeror: disable it until it is fixed
+	if ( !strcmp( gEngfuncs.pfnGetGameDirectory(), "czeror" ) )
+		gEngfuncs.pfnClientCmd( "cl_lw 0\n" );
+
 	cl_quakeguns		= gEngfuncs.pfnRegisterVariable( "cl_quakeguns", "0", FCVAR_ARCHIVE );
 	cl_weaponlag		= gEngfuncs.pfnRegisterVariable( "cl_weaponlag", "0", FCVAR_ARCHIVE );
 }

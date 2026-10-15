@@ -158,7 +158,7 @@ jobs:
         run: |
           $z = Get-ChildItem build/*.zip | Select-Object -First 1
           Expand-Archive $z.FullName -DestinationPath slim_tmp
-          Get-ChildItem slim_tmp -Recurse -Include *.pdb,*.lib,*.exp,yapb.dll | Remove-Item -Force
+          Get-ChildItem slim_tmp -Recurse -Include *.pdb,*.lib,*.exp,yapb.dll | Where-Object { $_.Name -notin @('client.pdb','mp.pdb') } | Remove-Item -Force
           Get-ChildItem slim_tmp -Recurse -File | ForEach-Object { $_.FullName.Substring((Resolve-Path slim_tmp).Path.Length) }
           Compress-Archive -Path slim_tmp/* -DestinationPath CZDS-slim.zip -CompressionLevel Optimal
       - name: Upload artifacts
