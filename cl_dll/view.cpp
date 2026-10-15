@@ -80,6 +80,7 @@ cvar_t	*cl_bob;
 cvar_t	*cl_bobup;
 cvar_t	*cl_waterdist;
 cvar_t	*cl_chasedist;
+cvar_t	*cz_viewadd; // CZ:DS: extra eye height (HL-style 28 instead of CS 17)
 cvar_t	*cl_weaponlag;
 cvar_t	*cl_quakeguns;
 
@@ -695,6 +696,9 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 
 	vec3_t camAngles, camForward, camRight, camUp;
 	cl_entity_t *pwater;
+
+	if ( cz_viewadd && pparams->health > 0 )
+		pparams->viewheight[2] += cz_viewadd->value;
 
 	if ( gEngfuncs.IsSpectateOnly() )
 	{
@@ -1887,6 +1891,7 @@ void V_Init (void)
 	cl_bobup			= gEngfuncs.pfnRegisterVariable( "cl_bobup","0.5", 0 );
 	cl_waterdist		= gEngfuncs.pfnRegisterVariable( "cl_waterdist","4", 0 );
 	cl_chasedist		= gEngfuncs.pfnRegisterVariable( "cl_chasedist","112", 0 );
+	cz_viewadd			= gEngfuncs.pfnRegisterVariable( "cz_viewadd", !strcmp( gEngfuncs.pfnGetGameDirectory(), "czeror" ) ? "11" : "0", FCVAR_ARCHIVE );
 
 	cl_quakeguns		= gEngfuncs.pfnRegisterVariable( "cl_quakeguns", "0", FCVAR_ARCHIVE );
 	cl_weaponlag		= gEngfuncs.pfnRegisterVariable( "cl_weaponlag", "0", FCVAR_ARCHIVE );
