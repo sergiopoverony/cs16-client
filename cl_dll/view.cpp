@@ -698,7 +698,12 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 	cl_entity_t *pwater;
 
 	if ( cz_viewadd && pparams->health > 0 )
-		pparams->viewheight[2] += cz_viewadd->value;
+	{
+		// CS eye height: stand 17, duck 12. Add the HL-style offset only when standing (smooth blend while ducking)
+		float k = ( pparams->viewheight[2] - 12.0f ) / 5.0f;
+		k = k < 0.0f ? 0.0f : ( k > 1.0f ? 1.0f : k );
+		pparams->viewheight[2] += cz_viewadd->value * k;
+	}
 
 	if ( gEngfuncs.IsSpectateOnly() )
 	{
