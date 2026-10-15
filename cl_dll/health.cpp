@@ -115,6 +115,17 @@ int CHudHealth::VidInit(void)
 
 
 	m_HUD_dmg_bio = gHUD.GetSpriteIndex( "dmg_bio" ) + 1;
+	{
+		// lookup by name: czeror hud.txt has different order and lacks some icons
+		static const char *names[NUM_DMG_TYPES] = { "dmg_poison", "dmg_chem", "dmg_cold", "dmg_drown", "dmg_heat", "dmg_gas", "dmg_rad", "dmg_shock", "dmg_caltrop", "dmg_tranq", "dmg_concuss", "dmg_haluc" };
+		for( int k = 0; k < NUM_DMG_TYPES; k++ )
+		{
+			int idx = gHUD.GetSpriteIndex( names[k] );
+			if( idx < 0 && k == 1 ) idx = gHUD.GetSpriteIndex( "dmg_gas" );
+			if( idx < 0 ) idx = m_HUD_dmg_bio + k;
+			m_dmgSprite[k] = idx;
+		}
+	}
 	m_HUD_cross = gHUD.GetSpriteIndex( "cross" );
 
 	giDmgHeight = gHUD.GetSpriteRect(m_HUD_dmg_bio).Width();
@@ -376,8 +387,8 @@ void CHudHealth::DrawDamage(float flTime)
 		if (m_bitsDamage & giDmgFlags[i])
 		{
 			DAMAGE_IMAGE *pdmg = &m_dmg[i];
-			SPR_Set(gHUD.GetSprite(m_HUD_dmg_bio + i), r, g, b );
-			SPR_DrawAdditive(0, pdmg->x, pdmg->y, &gHUD.GetSpriteRect(m_HUD_dmg_bio + i));
+			SPR_Set(gHUD.GetSprite(m_dmgSprite[i]), r, g, b );
+			SPR_DrawAdditive(0, pdmg->x, pdmg->y, &gHUD.GetSpriteRect(m_dmgSprite[i]));
 		}
 	}
 

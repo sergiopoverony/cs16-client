@@ -1617,6 +1617,11 @@ void CHudAmmo::DrawCrosshair()
 	if ( g_iWeaponFlags & WPNSTATE_SHIELD_DRAWN )
 		return;
 
+	// CZ: zoomed AUG/SG552 shows only its special crosshair
+	if ( gHUD.GetGameType() == GAME_CZERODS && gHUD.m_iFOV < 90
+	     && ( weaponid == WEAPON_AUG || weaponid == WEAPON_SG552 ) )
+		return;
+
 	if ( weaponid <= 30 )
 	{
 		iDistance = Distances[weaponid - 1][0];

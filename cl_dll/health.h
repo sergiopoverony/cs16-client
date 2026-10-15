@@ -125,6 +125,7 @@ public:
 
 	int m_iHealth;
 	int m_HUD_dmg_bio;
+	int m_dmgSprite[NUM_DMG_TYPES];
 	int m_HUD_cross;
 	//float m_fAttackFront, m_fAttackRear, m_fAttackLeft, m_fAttackRight;
 	float m_fAttack[ATK_COUNT];

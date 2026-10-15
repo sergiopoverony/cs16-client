@@ -353,7 +353,7 @@ void CHud :: Init( void )
 	m_pShowMoney = CVAR_CREATE( "scoreboard_showmoney", "1", FCVAR_ARCHIVE );
 
 	// The cvar was taken from the OpenAG client
-	m_pCvarColor = CVAR_CREATE( "hud_color", "255 160 0", FCVAR_ARCHIVE );
+	m_pCvarColor = CVAR_CREATE( "hud_color", !strcmp( gEngfuncs.pfnGetGameDirectory(), "czeror" ) ? "50 250 50" : "255 160 0", FCVAR_ARCHIVE );
 
 	if ( gEngfuncs.pfnGetCvarFloat( "developer" ) > 0.0f )
 	{

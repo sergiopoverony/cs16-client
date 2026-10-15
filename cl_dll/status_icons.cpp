@@ -133,7 +133,16 @@ void CHudStatusIcons::EnableIcon( const char *pszIconName, unsigned char red, un
 
 	// Load the sprite and add it to the list
 	// the sprite must be listed in hud.txt
-	int spr_index = gHUD.GetSpriteIndex( pszIconName );
+	int spr_index = -1;
+	{
+		// czeror hud.txt uses different icon names
+		static const char *alias[][2] = { {"rescue","icon_hostagezone"}, {"defuser","icon_bombdefuse"}, {"nvg","icon_nightvision"} };
+		for( int a = 0; a < 3; a++ )
+			if( !strcmp( pszIconName, alias[a][0] ) && !strcmp( gEngfuncs.pfnGetGameDirectory(), "czeror" ) )
+				spr_index = gHUD.GetSpriteIndex( alias[a][1] );
+	}
+	if( spr_index < 0 )
+		spr_index = gHUD.GetSpriteIndex( pszIconName );
 	m_IconList[i].spr = gHUD.GetSprite( spr_index );
 	m_IconList[i].rc = gHUD.GetSpriteRect( spr_index );
 	m_IconList[i].r = red;
