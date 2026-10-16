@@ -224,9 +224,53 @@ HUD_CreateEntities
 Gives us a chance to add additional entities to the render this frame
 =========================
 */
+extern vec3_t v_origin, v_angles;
+int g_czToolsOwned = 0; // CZ tool mask from the HudIcons message
+
+// CZ: blowtorch flame, drawn in the view so it does not lag behind the camera
+static void CZ_TorchFlame( void )
+{
+	static cl_entity_t ent;
+	static int spr = 0;
+	static cvar_t *fwd, *right, *up, *scl;
+	if( !( g_czToolsOwned & 64 ) || !gEngfuncs.GetLocalPlayer() || gEngfuncs.IsSpectateOnly() )
+		return;
+	if( !fwd )
+	{
+		fwd = gEngfuncs.pfnGetCvarPointer( "cz_torch_fwd" );
+		right = gEngfuncs.pfnGetCvarPointer( "cz_torch_right" );
+		up = gEngfuncs.pfnGetCvarPointer( "cz_torch_up" );
+		scl = gEngfuncs.pfnGetCvarPointer( "cz_torch_scale" );
+		if( !fwd || !right || !up || !scl ) { fwd = nullptr; return; }
+	}
+	if( !spr )
+	{
+		model_t *m = gEngfuncs.LoadMapSprite( "sprites/glow01.spr" );
+		if( !m ) return;
+		spr = 1;
+		memset( &ent, 0, sizeof( ent ) );
+		ent.model = m;
+	}
+	vec3_t f, r, u;
+	gEngfuncs.pfnAngleVectors( v_angles, f, r, u );
+	bool atk = ( gHUD.m_iKeyBits & IN_ATTACK ) != 0;
+	for( int i = 0; i < 3; i++ )
+		ent.origin[i] = v_origin[i] + f[i] * fwd->value + r[i] * right->value + u[i] * up->value;
+	ent.curstate.rendermode = kRenderTransAdd;
+	ent.curstate.renderamt = 220;
+	ent.curstate.rendercolor.r = 255;
+	ent.curstate.rendercolor.g = 150;
+	ent.curstate.rendercolor.b = 50;
+	ent.curstate.scale = scl->value * ( atk ? 1.5f : 1.0f );
+	ent.curstate.frame = 0;
+	ent.curstate.entityType = ET_NORMAL;
+	gEngfuncs.CL_CreateVisibleEntity( ET_NORMAL, &ent );
+}
+
 void DLLEXPORT HUD_CreateEntities( void )
 {
 	// Add in any game specific objects
+	CZ_TorchFlame();
 
 	GetClientVoiceHud()->CreateEntities();
 }

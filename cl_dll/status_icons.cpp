@@ -112,6 +112,8 @@ int CHudStatusIcons::MsgFunc_HudIcons( const char *pszName, int iSize, void *pbu
 	int shown = reader.ReadShort();
 	reader.ReadShort();
 	int owned = reader.ReadShort();
+	extern int g_czToolsOwned;
+	g_czToolsOwned = owned;
 
 	static const struct { int bit; const char *name; } icons[] =
 	{
