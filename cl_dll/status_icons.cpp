@@ -17,6 +17,7 @@
 //
 #include "hud.h"
 #include "cl_util.h"
+#include "draw_util.h"
 #include "const.h"
 #include "entity_state.h"
 #include "cl_entity.h"
