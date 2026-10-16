@@ -29,6 +29,7 @@
 int CHudStatusIcons::Init( void )
 {
 	HOOK_MESSAGE( gHUD.m_StatusIcons, StatusIcon );
+	HOOK_MESSAGE( gHUD.m_StatusIcons, HudIcons );
 
 	gHUD.AddHudElem( this );
 
@@ -99,6 +100,42 @@ int CHudStatusIcons::MsgFunc_StatusIcon( const char *pszName, int iSize, void *p
 	else
 	{
 		DisableIcon( pszIconName );
+	}
+
+	return 1;
+}
+
+// CZ: HudIcons = 3 shorts. First = icon mask to show, second/third = tools the player owns.
+int CHudStatusIcons::MsgFunc_HudIcons( const char *pszName, int iSize, void *pbuf )
+{
+	BufferReader reader( pszName, pbuf, iSize );
+	int shown = reader.ReadShort();
+	reader.ReadShort();
+	int owned = reader.ReadShort();
+
+	static const struct { int bit; const char *name; } icons[] =
+	{
+		{ 1,    "icon_stealth" },
+		{ 4,    "icon_camera" },
+		{ 8,    "icon_fibercamera" },
+		{ 32,   "icon_radiocontrolledbomb" },
+		{ 64,   "icon_blowtorch" },
+		{ 512,  "icon_bombdefuse" },
+		{ 1024, "icon_hostagezone" },
+	};
+
+	for( size_t k = 0; k < sizeof( icons ) / sizeof( icons[0] ); k++ )
+	{
+		if( shown & icons[k].bit )
+		{
+			if( owned & icons[k].bit || icons[k].bit == 1 || icons[k].bit == 512 || icons[k].bit == 1024 )
+				EnableIcon( icons[k].name, 50, 250, 50 );
+			else
+				EnableIcon( icons[k].name, 250, 60, 60 );
+			m_iFlags |= HUD_DRAW;
+		}
+		else
+			DisableIcon( icons[k].name );
 	}
 
 	return 1;

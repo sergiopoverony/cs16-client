@@ -720,10 +720,11 @@ public:
 	void Reset( void );
 	int Draw(float flTime);
 	CHudMsgFunc(StatusIcon);
+	CHudMsgFunc(HudIcons);
 
 	enum {
 		MAX_ICONSPRITENAME_LENGTH = MAX_SPRITE_NAME_LENGTH,
-		MAX_ICONSPRITES = 4,
+		MAX_ICONSPRITES = 8,
 	};
 
 	
