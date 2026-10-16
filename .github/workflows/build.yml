@@ -129,6 +129,9 @@ jobs:
         with:
           fetch-depth: 1
           submodules: recursive
+      - name: Patch main menu background (CZDS)
+        shell: bash
+        run: git -C 3rdparty/mainui_cpp apply --ignore-whitespace ../../mainui_background.patch
       - name: Setup Visual Studio
         uses: ilammy/msvc-dev-cmd@v1
         with:
