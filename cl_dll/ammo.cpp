@@ -383,8 +383,7 @@ void CHudAmmo::Think(void)
 				}
 				else
 				{
-					if( gHUD.GetGameType() != GAME_CZERODS )
-						gWR.DropWeapon( p );
+					gWR.DropWeapon( p ); // czeror too: weapons taken by player_weaponstrip must leave the menu
 				}
 			}
 		}
@@ -719,6 +718,43 @@ int CHudAmmo::MsgFunc_Crosshair(const char *pszName, int iSize, void *pbuf)
    return 0;
 }
 
+// CZ: shell model indices (cached in ResetHUD) may point to other models; make sure it really is a shell model
+int Cz_FixShellModel( int model, int soundtype )
+{
+	if( strcmp( gEngfuncs.pfnGetGameDirectory(), "czeror" ) )
+		return model;
+
+	// the indices cached in ResetHUD can be stale: resolve them again and translate old -> new
+	int fR = gEngfuncs.pEventAPI->EV_FindModelIndex( "models/rshell.mdl" );
+	int fP = gEngfuncs.pEventAPI->EV_FindModelIndex( "models/pshell.mdl" );
+	int fS = gEngfuncs.pEventAPI->EV_FindModelIndex( "models/shotgunshell.mdl" );
+
+	int out = model;
+	if( fR != g_iRShell || fP != g_iPShell || fS != g_iShotgunShell )
+	{
+		static int warned = 0;
+		if( warned++ < 5 )
+			gEngfuncs.Con_Printf( "Brass: shell indices fixed R=%d P=%d S=%d (were %d %d %d), model %d\n", fR, fP, fS, g_iRShell, g_iPShell, g_iShotgunShell, model );
+
+		if( model == g_iRShell && fR ) out = fR;
+		else if( model == g_iPShell && fP ) out = fP;
+		else if( model == g_iShotgunShell && fS ) out = fS;
+
+		g_iRShell = fR;
+		g_iPShell = fP;
+		g_iShotgunShell = fS;
+	}
+
+	model_t *m = IEngineStudio.GetModelByIndex( out );
+	if( !m || !strstr( m->name, "shell" ))
+	{
+		int r = ( soundtype == 2 ) ? fS : fR;
+		out = r ? r : fP;
+	}
+
+	return out;
+}
+
 int CHudAmmo::MsgFunc_Brass( const char *pszName, int iSize, void *pbuf )
 {
 	BufferReader reader( pszName, pbuf, iSize );
@@ -760,18 +796,6 @@ int CHudAmmo::MsgFunc_Brass( const char *pszName, int iSize, void *pbuf )
 
 	origin.x += x;
 	origin.y += y;
-	// CZ: server-side model index may not match client list; make sure it really is a shell model
-	if( !strcmp( gEngfuncs.pfnGetGameDirectory(), "czeror" ) )
-	{
-		model_t *mdl = IEngineStudio.GetModelByIndex( ModelIndex );
-		if( !mdl || !strstr( mdl->name, "shell" ))
-		{
-			static int warned = 0;
-			if( !warned++ )
-				gEngfuncs.Con_Printf( "Brass: bad model index %d (%s), using shell fallback\n", ModelIndex, mdl ? mdl->name : "null" );
-			ModelIndex = ( BounceSoundType == 2 ) ? g_iShotgunShell : g_iRShell;
-		}
-	}
 	EV_EjectBrass( origin, velocity, Rotation, ModelIndex, BounceSoundType, Life );
 	return 1;
 }

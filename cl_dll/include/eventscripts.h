@@ -130,9 +130,12 @@ EV_EjectBrass
 Bullet shell casings
 =================
 */
+int Cz_FixShellModel( int model, int soundtype ); // ammo.cpp
+
 inline void EV_EjectBrass( float *origin, float *velocity, float rotation, int model, int soundtype, float life = 2.5f )
 {
 	Vector angles(0.0f, 0.0f, rotation);
+	model = Cz_FixShellModel( model, soundtype );
 	gEngfuncs.pEfxAPI->R_TempModel( origin, velocity, angles, life, model, soundtype );
 }
 
