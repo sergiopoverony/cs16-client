@@ -286,6 +286,10 @@ int CHudRadar::Draw(float flTime)
 		 gHUD.m_fPlayerDead )
 		return 1;
 
+	// czeror hud.txt has no radar sprites: without them the whole last-set sprite sheet got drawn
+	if( !m_hRadar.spr || !m_hRadarOpaque.spr )
+		return 1;
+
 	int iTeamNumber = g_PlayerExtraInfo[ gHUD.m_Scoreboard.m_iPlayerNum ].teamnumber;
 	int r, g, b;
 

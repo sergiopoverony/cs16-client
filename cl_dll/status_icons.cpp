@@ -183,6 +183,8 @@ void CHudStatusIcons::EnableIcon( const char *pszIconName, unsigned char red, un
 	if( spr_index < 0 )
 		return; // no such sprite in this game's hud.txt: do not draw garbage
 	m_IconList[i].spr = gHUD.GetSprite( spr_index );
+	if( !m_IconList[i].spr )
+		gEngfuncs.Con_Printf( "StatusIcon: sprite for '%s' is not loaded (index %d)\n", pszIconName, spr_index );
 	m_IconList[i].rc = gHUD.GetSpriteRect( spr_index );
 	m_IconList[i].r = red;
 	m_IconList[i].g = green;

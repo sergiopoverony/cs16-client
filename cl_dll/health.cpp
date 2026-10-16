@@ -125,6 +125,22 @@ int CHudHealth::VidInit(void)
 			if( idx < 0 ) idx = m_HUD_dmg_bio + k;
 			m_dmgSprite[k] = idx;
 		}
+
+		// czeror: chemical attack must show the hazard sign (dmg_chem is commented out in hud.txt):
+		// it sits left of dmg_bio in the same sheet
+		m_bChemOverride = false;
+		if( gHUD.GetSpriteIndex( "dmg_chem" ) < 0 )
+		{
+			int bio = gHUD.GetSpriteIndex( "dmg_bio" );
+			if( bio >= 0 )
+			{
+				wrect_t r = gHUD.GetSpriteRect( bio );
+				int w = r.right - r.left;
+				m_rcChem.left = 0; m_rcChem.top = 0; m_rcChem.right = w; m_rcChem.bottom = w;
+				m_dmgSprite[1] = m_dmgSprite[5] = bio;
+				m_bChemOverride = true;
+			}
+		}
 	}
 	m_HUD_cross = gHUD.GetSpriteIndex( "cross" );
 
@@ -388,7 +404,10 @@ void CHudHealth::DrawDamage(float flTime)
 		{
 			DAMAGE_IMAGE *pdmg = &m_dmg[i];
 			SPR_Set(gHUD.GetSprite(m_dmgSprite[i]), r, g, b );
-			SPR_DrawAdditive(0, pdmg->x, pdmg->y, &gHUD.GetSpriteRect(m_dmgSprite[i]));
+			if( m_bChemOverride && ( i == 1 || i == 5 ) )
+				SPR_DrawAdditive(0, pdmg->x, pdmg->y, &m_rcChem);
+			else
+				SPR_DrawAdditive(0, pdmg->x, pdmg->y, &gHUD.GetSpriteRect(m_dmgSprite[i]));
 		}
 	}
 
