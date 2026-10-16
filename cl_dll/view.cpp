@@ -1896,7 +1896,7 @@ void V_Init (void)
 	cl_bobup			= gEngfuncs.pfnRegisterVariable( "cl_bobup","0.5", 0 );
 	cl_waterdist		= gEngfuncs.pfnRegisterVariable( "cl_waterdist","4", 0 );
 	cl_chasedist		= gEngfuncs.pfnRegisterVariable( "cl_chasedist","112", 0 );
-	cz_viewadd			= gEngfuncs.pfnRegisterVariable( "cz_viewadd", !strcmp( gEngfuncs.pfnGetGameDirectory(), "czeror" ) ? "11" : "0", FCVAR_ARCHIVE );
+	cz_viewadd			= gEngfuncs.pfnRegisterVariable( "cz_viewadd", "0", FCVAR_ARCHIVE );
 
 	// CZ:DS: client weapon prediction crashes (cs_weapons) in czeror: disable it until it is fixed
 	if ( !strcmp( gEngfuncs.pfnGetGameDirectory(), "czeror" ) )
