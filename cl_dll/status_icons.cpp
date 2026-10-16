@@ -239,11 +239,12 @@ int CHudStatusIcons::MsgFunc_HudIcons( const char *pszName, int iSize, void *pbu
 {
 	BufferReader reader( pszName, pbuf, iSize );
 	int shown = reader.ReadShort();
-	reader.ReadShort();
+	int active = reader.ReadShort();
 	int owned = reader.ReadShort();
-	g_czZoneShown = shown & ( owned | 512 );
+	g_czZoneShown = active & ( owned | 512 );
 	extern int g_czToolsOwned;
 	g_czToolsOwned = owned;
+	gEngfuncs.Con_DPrintf( "HudIcons: shown %d active %d owned %d\n", shown, active, owned );
 
 	static const struct { int bit; const char *name; } icons[] =
 	{
@@ -260,7 +261,8 @@ int CHudStatusIcons::MsgFunc_HudIcons( const char *pszName, int iSize, void *pbu
 	{
 		if( shown & icons[k].bit )
 		{
-			if( owned & icons[k].bit || icons[k].bit == 1 || icons[k].bit == 512 || icons[k].bit == 1024 )
+			// tools: green while the player is inside their zone, red otherwise
+			if( ( active & icons[k].bit ) || icons[k].bit == 1 || icons[k].bit == 512 || icons[k].bit == 1024 )
 				EnableIcon( icons[k].name, 50, 250, 50 );
 			else
 				EnableIcon( icons[k].name, 250, 60, 60 );

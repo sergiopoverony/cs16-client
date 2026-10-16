@@ -230,19 +230,22 @@ int g_czToolsOwned = 0; // CZ tool mask from the HudIcons message
 // CZ: blowtorch flame, drawn in the view so it does not lag behind the camera
 extern int g_czTool, g_czFiber;
 
-// blowtorch flame: a pink-white core with a soft halo at the nozzle (attachment 0 of the view model), always lit
+// blowtorch flame: a small pink-white flame at the nozzle plus a soft light on the walls.
+// The position is computed from the view (cz_torch_fwd/right/up, tweakable live); the view model attachment is optional (cz_torch_att 1)
 static void CZ_TorchFlame( void )
 {
 	static cl_entity_t core, halo;
 	static model_t *spr = nullptr;
-	static cvar_t *fwd, *right, *up;
+	static cvar_t *fwd, *right, *up, *att, *size;
 	if( g_czTool != 3 || g_czFiber || !gEngfuncs.GetLocalPlayer() || gEngfuncs.IsSpectateOnly() )
 		return;
 	if( !fwd )
 	{
-		fwd = gEngfuncs.pfnGetCvarPointer( "cz_torch_fwd" );
-		right = gEngfuncs.pfnGetCvarPointer( "cz_torch_right" );
-		up = gEngfuncs.pfnGetCvarPointer( "cz_torch_up" );
+		fwd   = gEngfuncs.pfnRegisterVariable( "cz_torch_fwd",   "24", 0 );
+		right = gEngfuncs.pfnRegisterVariable( "cz_torch_right", "11", 0 );
+		up    = gEngfuncs.pfnRegisterVariable( "cz_torch_up",    "5",  0 );
+		att   = gEngfuncs.pfnRegisterVariable( "cz_torch_att",   "0",  0 );
+		size  = gEngfuncs.pfnRegisterVariable( "cz_torch_size",  "1",  0 );
 	}
 	if( !spr )
 	{
@@ -257,46 +260,63 @@ static void CZ_TorchFlame( void )
 	gEngfuncs.pfnAngleVectors( v_angles, f, r, u );
 
 	bool have = false;
-	cl_entity_t *vm = gEngfuncs.GetViewModel();
-	if( vm )
+	if( att && att->value > 0.0f )
 	{
-		float d2 = 0;
-		for( int i = 0; i < 3; i++ )
+		cl_entity_t *vm = gEngfuncs.GetViewModel();
+		if( vm )
 		{
-			pos[i] = vm->attachment[0][i];
-			float d = pos[i] - v_origin[i];
-			d2 += d * d;
+			float d2 = 0;
+			for( int i = 0; i < 3; i++ )
+			{
+				pos[i] = vm->attachment[0][i];
+				float d = pos[i] - v_origin[i];
+				d2 += d * d;
+			}
+			have = ( d2 > 4.0f && d2 < 60.0f * 60.0f );
 		}
-		have = ( d2 > 4.0f && d2 < 60.0f * 60.0f );
 	}
 	if( !have )
 	{
-		float a = fwd ? fwd->value : 24.0f, b = right ? right->value : 11.0f, c = up ? up->value : 5.0f;
+		float a = fwd->value, b = right->value, c = up->value;
 		for( int i = 0; i < 3; i++ )
 			pos[i] = v_origin[i] + f[i] * a + r[i] * b + u[i] * c;
 	}
 
 	bool atk = ( gHUD.m_iKeyBits & IN_ATTACK ) != 0;
 	float flick = 0.9f + 0.1f * sinf( gHUD.m_flTime * 40.0f );
+	float sz = size ? size->value : 1.0f;
+
+	// light on the surroundings
+	dlight_t *dl = gEngfuncs.pEfxAPI->CL_AllocDlight( 1 );
+	if( dl )
+	{
+		VectorCopy( pos, dl->origin );
+		dl->radius = ( atk ? 130.0f : 100.0f ) * flick;
+		dl->color.r = 255;
+		dl->color.g = 150;
+		dl->color.b = 190;
+		dl->die = gEngfuncs.GetClientTime() + 0.05f;
+		dl->decay = 0;
+	}
 
 	VectorCopy( pos, core.origin );
 	core.curstate.rendermode = kRenderTransAdd;
 	core.curstate.renderamt = 255;
 	core.curstate.rendercolor.r = 255;
-	core.curstate.rendercolor.g = 200;
-	core.curstate.rendercolor.b = 225;
-	core.curstate.scale = 0.07f * flick * ( atk ? 1.4f : 1.0f );
+	core.curstate.rendercolor.g = 210;
+	core.curstate.rendercolor.b = 230;
+	core.curstate.scale = 0.05f * sz * flick * ( atk ? 1.4f : 1.0f );
 	core.curstate.frame = 0;
 	core.curstate.entityType = ET_NORMAL;
 	gEngfuncs.CL_CreateVisibleEntity( ET_NORMAL, &core );
 
 	VectorCopy( pos, halo.origin );
 	halo.curstate.rendermode = kRenderTransAdd;
-	halo.curstate.renderamt = atk ? 130 : 90;
+	halo.curstate.renderamt = atk ? 90 : 60;
 	halo.curstate.rendercolor.r = 235;
 	halo.curstate.rendercolor.g = 140;
 	halo.curstate.rendercolor.b = 190;
-	halo.curstate.scale = 0.22f * flick * ( atk ? 1.3f : 1.0f );
+	halo.curstate.scale = 0.12f * sz * flick * ( atk ? 1.3f : 1.0f );
 	halo.curstate.frame = 0;
 	halo.curstate.entityType = ET_NORMAL;
 	gEngfuncs.CL_CreateVisibleEntity( ET_NORMAL, &halo );
