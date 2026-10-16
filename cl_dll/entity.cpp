@@ -228,43 +228,78 @@ extern vec3_t v_origin, v_angles;
 int g_czToolsOwned = 0; // CZ tool mask from the HudIcons message
 
 // CZ: blowtorch flame, drawn in the view so it does not lag behind the camera
+extern int g_czTool, g_czFiber;
+
+// blowtorch flame: a pink-white core with a soft halo at the nozzle (attachment 0 of the view model), always lit
 static void CZ_TorchFlame( void )
 {
-	static cl_entity_t ent;
-	static int spr = 0;
-	static cvar_t *fwd, *right, *up, *scl;
-	if( !( g_czToolsOwned & 64 ) || !gEngfuncs.GetLocalPlayer() || gEngfuncs.IsSpectateOnly() )
+	static cl_entity_t core, halo;
+	static model_t *spr = nullptr;
+	static cvar_t *fwd, *right, *up;
+	if( g_czTool != 3 || g_czFiber || !gEngfuncs.GetLocalPlayer() || gEngfuncs.IsSpectateOnly() )
 		return;
 	if( !fwd )
 	{
 		fwd = gEngfuncs.pfnGetCvarPointer( "cz_torch_fwd" );
 		right = gEngfuncs.pfnGetCvarPointer( "cz_torch_right" );
 		up = gEngfuncs.pfnGetCvarPointer( "cz_torch_up" );
-		scl = gEngfuncs.pfnGetCvarPointer( "cz_torch_scale" );
-		if( !fwd || !right || !up || !scl ) { fwd = nullptr; return; }
 	}
 	if( !spr )
 	{
-		model_t *m = gEngfuncs.LoadMapSprite( "sprites/glow01.spr" );
-		if( !m ) return;
-		spr = 1;
-		memset( &ent, 0, sizeof( ent ) );
-		ent.model = m;
+		spr = gEngfuncs.LoadMapSprite( "sprites/glow01.spr" );
+		if( !spr ) return;
+		memset( &core, 0, sizeof( core ) );
+		memset( &halo, 0, sizeof( halo ) );
+		core.model = halo.model = spr;
 	}
-	vec3_t f, r, u;
+
+	vec3_t f, r, u, pos;
 	gEngfuncs.pfnAngleVectors( v_angles, f, r, u );
+
+	bool have = false;
+	cl_entity_t *vm = gEngfuncs.GetViewModel();
+	if( vm )
+	{
+		float d2 = 0;
+		for( int i = 0; i < 3; i++ )
+		{
+			pos[i] = vm->attachment[0][i];
+			float d = pos[i] - v_origin[i];
+			d2 += d * d;
+		}
+		have = ( d2 > 4.0f && d2 < 60.0f * 60.0f );
+	}
+	if( !have )
+	{
+		float a = fwd ? fwd->value : 24.0f, b = right ? right->value : 11.0f, c = up ? up->value : 5.0f;
+		for( int i = 0; i < 3; i++ )
+			pos[i] = v_origin[i] + f[i] * a + r[i] * b + u[i] * c;
+	}
+
 	bool atk = ( gHUD.m_iKeyBits & IN_ATTACK ) != 0;
-	for( int i = 0; i < 3; i++ )
-		ent.origin[i] = v_origin[i] + f[i] * fwd->value + r[i] * right->value + u[i] * up->value;
-	ent.curstate.rendermode = kRenderTransAdd;
-	ent.curstate.renderamt = 220;
-	ent.curstate.rendercolor.r = 255;
-	ent.curstate.rendercolor.g = 190;
-	ent.curstate.rendercolor.b = 215;
-	ent.curstate.scale = scl->value * ( atk ? 1.5f : 1.0f );
-	ent.curstate.frame = 0;
-	ent.curstate.entityType = ET_NORMAL;
-	gEngfuncs.CL_CreateVisibleEntity( ET_NORMAL, &ent );
+	float flick = 0.9f + 0.1f * sinf( gHUD.m_flTime * 40.0f );
+
+	VectorCopy( pos, core.origin );
+	core.curstate.rendermode = kRenderTransAdd;
+	core.curstate.renderamt = 255;
+	core.curstate.rendercolor.r = 255;
+	core.curstate.rendercolor.g = 200;
+	core.curstate.rendercolor.b = 225;
+	core.curstate.scale = 0.07f * flick * ( atk ? 1.4f : 1.0f );
+	core.curstate.frame = 0;
+	core.curstate.entityType = ET_NORMAL;
+	gEngfuncs.CL_CreateVisibleEntity( ET_NORMAL, &core );
+
+	VectorCopy( pos, halo.origin );
+	halo.curstate.rendermode = kRenderTransAdd;
+	halo.curstate.renderamt = atk ? 130 : 90;
+	halo.curstate.rendercolor.r = 235;
+	halo.curstate.rendercolor.g = 140;
+	halo.curstate.rendercolor.b = 190;
+	halo.curstate.scale = 0.22f * flick * ( atk ? 1.3f : 1.0f );
+	halo.curstate.frame = 0;
+	halo.curstate.entityType = ET_NORMAL;
+	gEngfuncs.CL_CreateVisibleEntity( ET_NORMAL, &halo );
 }
 
 void DLLEXPORT HUD_CreateEntities( void )

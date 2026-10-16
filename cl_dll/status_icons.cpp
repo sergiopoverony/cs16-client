@@ -47,17 +47,21 @@ int CHudStatusIcons::VidInit( void )
 	return 1;
 }
 
+int g_czTool = 0;
+static int   g_czCount = 0, g_czHold = 0;
+static float g_czPlateT = 0;
+static int   g_czZoneShown = 0;
+int g_czFiber = 0;
+static int   g_czZoom = 0;
+
 void CHudStatusIcons::Reset( void )
 {
+	g_czTool = 0; g_czFiber = 0; g_czZoom = 0; g_czZoneShown = 0; g_czPlateT = 0;
 	memset( m_IconList, 0, sizeof m_IconList );
 	m_iFlags &= ~HUD_DRAW;
 }
 
 // ---- CZ mission tools HUD ----
-static int   g_czTool = 0, g_czCount = 0, g_czHold = 0;
-static float g_czPlateT = 0;
-static int   g_czZoneShown = 0;
-static int   g_czFiber = 0, g_czZoom = 0;
 
 int CHudStatusIcons::MsgFunc_CzTool( const char *pszName, int iSize, void *pbuf )
 {
@@ -113,11 +117,11 @@ static void CZ_DrawTools( float flTime )
 				half = (int)sqrtf( (float)( R * R - dy * dy ) );
 			if( half <= 0 )
 			{
-				FillRGBA( 0, y, W, step, 0, 0, 0, 255 );
+				FillRGBABlend( 0, y, W, step, 0, 0, 0, 255 );
 				continue;
 			}
-			FillRGBA( 0, y, cx - half, step, 0, 0, 0, 255 );
-			FillRGBA( cx + half, y, W - ( cx + half ), step, 0, 0, 0, 255 );
+			FillRGBABlend( 0, y, cx - half, step, 0, 0, 0, 255 );
+			FillRGBABlend( cx + half, y, W - ( cx + half ), step, 0, 0, 0, 255 );
 			// scan line
 			FillRGBABlend( cx - half, y, half * 2, 1, 0, 0, 0, 70 );
 		}
