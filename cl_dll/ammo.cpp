@@ -18,6 +18,7 @@
 // implementation of CHudAmmo class
 //
 
+extern int g_iRShell, g_iPShell, g_iShotgunShell;
 #include "hud.h"
 #include "cvardef.h"
 #include "cl_util.h"
@@ -756,6 +757,18 @@ int CHudAmmo::MsgFunc_Brass( const char *pszName, int iSize, void *pbuf )
 
 	origin.x += x;
 	origin.y += y;
+	// CZ: server-side model index may not match client list; make sure it really is a shell model
+	if( !strcmp( gEngfuncs.pfnGetGameDirectory(), "czeror" ) )
+	{
+		const model_t *mdl = gEngfuncs.hudGetModelByIndex( ModelIndex );
+		if( !mdl || !strstr( mdl->name, "shell" ))
+		{
+			static int warned = 0;
+			if( !warned++ )
+				gEngfuncs.Con_Printf( "Brass: bad model index %d (%s), using shell fallback\n", ModelIndex, mdl ? mdl->name : "null" );
+			ModelIndex = ( BounceSoundType == 2 ) ? g_iShotgunShell : g_iRShell;
+		}
+	}
 	EV_EjectBrass( origin, velocity, Rotation, ModelIndex, BounceSoundType, Life );
 	return 1;
 }
