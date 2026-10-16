@@ -143,6 +143,8 @@ void CHudStatusIcons::EnableIcon( const char *pszIconName, unsigned char red, un
 	}
 	if( spr_index < 0 )
 		spr_index = gHUD.GetSpriteIndex( pszIconName );
+	if( spr_index < 0 )
+		return; // no such sprite in this game's hud.txt: do not draw garbage
 	m_IconList[i].spr = gHUD.GetSprite( spr_index );
 	m_IconList[i].rc = gHUD.GetSpriteRect( spr_index );
 	m_IconList[i].r = red;
