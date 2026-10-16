@@ -18,8 +18,11 @@
 // implementation of CHudAmmo class
 //
 
-extern int g_iRShell, g_iPShell, g_iShotgunShell;
 #include "hud.h"
+#include "com_model.h"
+#include "r_studioint.h"
+extern int g_iRShell, g_iPShell, g_iShotgunShell;
+extern engine_studio_api_t IEngineStudio;
 #include "cvardef.h"
 #include "cl_util.h"
 #include "parsemsg.h"
@@ -760,7 +763,7 @@ int CHudAmmo::MsgFunc_Brass( const char *pszName, int iSize, void *pbuf )
 	// CZ: server-side model index may not match client list; make sure it really is a shell model
 	if( !strcmp( gEngfuncs.pfnGetGameDirectory(), "czeror" ) )
 	{
-		const model_t *mdl = gEngfuncs.hudGetModelByIndex( ModelIndex );
+		model_t *mdl = IEngineStudio.GetModelByIndex( ModelIndex );
 		if( !mdl || !strstr( mdl->name, "shell" ))
 		{
 			static int warned = 0;
