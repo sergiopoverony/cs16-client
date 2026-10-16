@@ -721,6 +721,8 @@ public:
 	int Draw(float flTime);
 	CHudMsgFunc(StatusIcon);
 	CHudMsgFunc(HudIcons);
+	CHudMsgFunc(CzTool);
+	CHudMsgFunc(CzFiber);
 
 	enum {
 		MAX_ICONSPRITENAME_LENGTH = MAX_SPRITE_NAME_LENGTH,

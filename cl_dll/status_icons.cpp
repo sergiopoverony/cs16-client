@@ -21,6 +21,7 @@
 #include "entity_state.h"
 #include "cl_entity.h"
 #include <string.h>
+#include <math.h>
 #include <stdio.h>
 #include "parsemsg.h"
 #include "event_api.h"
@@ -30,6 +31,8 @@ int CHudStatusIcons::Init( void )
 {
 	HOOK_MESSAGE( gHUD.m_StatusIcons, StatusIcon );
 	HOOK_MESSAGE( gHUD.m_StatusIcons, HudIcons );
+	HOOK_MESSAGE( gHUD.m_StatusIcons, CzTool );
+	HOOK_MESSAGE( gHUD.m_StatusIcons, CzFiber );
 
 	gHUD.AddHudElem( this );
 
@@ -49,11 +52,132 @@ void CHudStatusIcons::Reset( void )
 	m_iFlags &= ~HUD_DRAW;
 }
 
+// ---- CZ mission tools HUD ----
+static int   g_czTool = 0, g_czCount = 0, g_czHold = 0;
+static float g_czPlateT = 0;
+static int   g_czZoneShown = 0;
+static int   g_czFiber = 0, g_czZoom = 0;
+
+int CHudStatusIcons::MsgFunc_CzTool( const char *pszName, int iSize, void *pbuf )
+{
+	BufferReader reader( pszName, pbuf, iSize );
+	int tool = reader.ReadByte();
+	g_czCount = reader.ReadByte();
+	g_czHold = reader.ReadByte();
+	if( tool != g_czTool && tool )
+		g_czPlateT = gHUD.m_flTime + 3.0f;
+	g_czTool = tool;
+	m_iFlags |= HUD_DRAW;
+	return 1;
+}
+
+int CHudStatusIcons::MsgFunc_CzFiber( const char *pszName, int iSize, void *pbuf )
+{
+	BufferReader reader( pszName, pbuf, iSize );
+	g_czFiber = reader.ReadByte();
+	g_czZoom = reader.ReadByte();
+	m_iFlags |= HUD_DRAW;
+	return 1;
+}
+
+static void CZ_DrawSprite( const char *name, int x, int y, int r, int g, int b )
+{
+	int idx = gHUD.GetSpriteIndex( name );
+	if( idx < 0 )
+		return;
+	HSPRITE spr = gHUD.GetSprite( idx );
+	if( !spr )
+		return;
+	SPR_Set( spr, r, g, b );
+	SPR_DrawAdditive( 0, x, y, &gHUD.GetSpriteRect( idx ) );
+}
+
+static void CZ_DrawTools( float flTime )
+{
+	static const char *toolIcons[] = { "", "icon_camera", "icon_fibercamera", "icon_blowtorch", "icon_radiocontrolledbomb" };
+
+	// fiber optic camera: round red-tinted view with scan lines
+	if( g_czFiber )
+	{
+		int W = ScreenWidth, H = ScreenHeight;
+		int cx = W / 2, cy = H / 2;
+		int R = (int)( ( W < H ? W : H ) * 0.46f );
+		FillRGBABlend( 0, 0, W, H, 220, 0, 0, 40 );
+		const int step = 3;
+		for( int y = 0; y < H; y += step )
+		{
+			int dy = y + step / 2 - cy;
+			int half = 0;
+			if( dy > -R && dy < R )
+				half = (int)sqrtf( (float)( R * R - dy * dy ) );
+			if( half <= 0 )
+			{
+				FillRGBA( 0, y, W, step, 0, 0, 0, 255 );
+				continue;
+			}
+			FillRGBA( 0, y, cx - half, step, 0, 0, 0, 255 );
+			FillRGBA( cx + half, y, W - ( cx + half ), step, 0, 0, 0, 255 );
+			// scan line
+			FillRGBABlend( cx - half, y, half * 2, 1, 0, 0, 0, 70 );
+		}
+		return;
+	}
+
+	// "you are in a ... zone" hint
+	if( g_czZoneShown )
+	{
+		static const struct { int bit; int tool; const char *text; } zones[] =
+		{
+			{ 4,   1, "You are in a camera zone" },
+			{ 8,   2, "You are in a fiber optic camera zone" },
+			{ 32,  4, "You are in a radio controlled bomb zone" },
+			{ 64,  3, "You are in a blowtorch zone" },
+			{ 512, 0, "You are in a bomb defuse zone" },
+		};
+		for( size_t i = 0; i < sizeof( zones ) / sizeof( zones[0] ); i++ )
+		{
+			if( ( g_czZoneShown & zones[i].bit ) && ( !zones[i].tool || g_czTool == zones[i].tool ) )
+			{
+				int len = DrawUtils::HudStringLen( zones[i].text );
+				DrawUtils::DrawHudString( ScreenWidth / 2 - len / 2, (int)( ScreenHeight * 0.14f ), ScreenWidth, zones[i].text, 90, 150, 255 );
+				break;
+			}
+		}
+	}
+
+	if( g_czTool < 1 || g_czTool > 4 )
+		return;
+
+	// "EQUIPMENT" plate on the right for a few seconds after a tool was taken
+	if( flTime < g_czPlateT )
+	{
+		int w = 110, h = 96;
+		int x = ScreenWidth - w - 10, y = ScreenHeight / 2 - h / 2;
+		FillRGBABlend( x, y, w, h, 0, 0, 0, 90 );
+		DrawUtils::DrawHudString( x + 12, y + 4, ScreenWidth, "EQUIPMENT", 50, 250, 50 );
+		CZ_DrawSprite( toolIcons[g_czTool], x + 4, y + 22, 50, 250, 50 );
+		if( g_czTool == 4 )
+			DrawUtils::DrawHudNumberString( x + w - 8, y + h - 24, 0, g_czCount, 50, 250, 50 );
+	}
+
+	// mines: icon and counter in the bottom right corner
+	if( g_czTool == 4 )
+	{
+		int x = ScreenWidth - 150, y = ScreenHeight - 70;
+		CZ_DrawSprite( toolIcons[4], x, y, 50, 250, 50 );
+		DrawUtils::DrawHudNumberString( x + 130, y + 20, 0, g_czCount, 50, 250, 50 );
+		if( g_czHold )
+			DrawUtils::DrawHudString( x - 4, y - 14, ScreenWidth, "DETONATOR", 50, 250, 50 );
+	}
+}
+
 // Draw status icons along the left-hand side of the screen
 int CHudStatusIcons::Draw( float flTime )
 {
 	if (gEngfuncs.IsSpectateOnly())
 		return 1;
+
+	CZ_DrawTools( flTime );
 	// find starting position to draw from, along right-hand side of screen
 	int x = 5;
 	int y = ScreenHeight / 2;
@@ -112,6 +236,7 @@ int CHudStatusIcons::MsgFunc_HudIcons( const char *pszName, int iSize, void *pbu
 	int shown = reader.ReadShort();
 	reader.ReadShort();
 	int owned = reader.ReadShort();
+	g_czZoneShown = shown & ( owned | 512 );
 	extern int g_czToolsOwned;
 	g_czToolsOwned = owned;
 

@@ -259,8 +259,8 @@ static void CZ_TorchFlame( void )
 	ent.curstate.rendermode = kRenderTransAdd;
 	ent.curstate.renderamt = 220;
 	ent.curstate.rendercolor.r = 255;
-	ent.curstate.rendercolor.g = 150;
-	ent.curstate.rendercolor.b = 50;
+	ent.curstate.rendercolor.g = 190;
+	ent.curstate.rendercolor.b = 215;
 	ent.curstate.scale = scl->value * ( atk ? 1.5f : 1.0f );
 	ent.curstate.frame = 0;
 	ent.curstate.entityType = ET_NORMAL;
