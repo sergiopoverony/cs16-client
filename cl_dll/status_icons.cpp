@@ -359,7 +359,7 @@ extern float g_czTorchSize;
 // Blowtorch flame: two sprites (core + halo) projected onto the screen and drawn in the 2D pass,
 // so the view model cannot hide them with its depth.
 // cz_torch_mode 0 = native-size HUD sprite draw (SPR_DrawAdditive), 1 = scaled 2D quad (cz_torchN_size)
-void CZ_DrawTorchSprites( void )
+static void CZ_TorchDraw( bool worldPass )
 {
 	static cvar_t *cv[2][6];
 	static cvar_t *cvMode = nullptr;
@@ -368,15 +368,16 @@ void CZ_DrawTorchSprites( void )
 	static char sprName[2][64] = { "", "" };
 	if( !cv[0][0] )
 	{
-		static const char *defName[2] = { "sprites/flare3.spr", "sprites/glow01.spr" };
+		static const char *defName[2] = { "sprites/flare3.spr", "sprites/flare2.spr" };
 		static const char *defSize[2] = { "10", "30" };
-		static const char *defAlpha[2] = { "1.0", "0.4" };
-		cvMode = gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) ? gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) : gEngfuncs.pfnRegisterVariable( "cz_torch_mode", "0", 0 );
+		static const char *defAlpha[2] = { "1.0", "0.2" };
+		static const char *defFwd[2] = { "0", "-3" };
+		cvMode = gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) ? gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) : gEngfuncs.pfnRegisterVariable( "cz_torch_mode", "2", 0 );
 		for( int k = 0; k < 2; k++ )
 		{
 			char n[64];
 			snprintf( n, sizeof n, "cz_torch%d_spr", k + 1 );   cv[k][0] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defName[k], 0 );
-			snprintf( n, sizeof n, "cz_torch%d_fwd", k + 1 );   cv[k][1] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, "0", 0 );
+			snprintf( n, sizeof n, "cz_torch%d_fwd", k + 1 );   cv[k][1] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defFwd[k], 0 );
 			snprintf( n, sizeof n, "cz_torch%d_right", k + 1 ); cv[k][2] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, "0", 0 );
 			snprintf( n, sizeof n, "cz_torch%d_up", k + 1 );    cv[k][3] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, "0", 0 );
 			snprintf( n, sizeof n, "cz_torch%d_size", k + 1 );  cv[k][4] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defSize[k], 0 );
@@ -388,6 +389,11 @@ void CZ_DrawTorchSprites( void )
 	extern bool g_czTorchOn, g_czTorchAtk;
 	extern float g_czTorchSize;
 	if( !g_czTorchOn || g_czTool != 3 || g_czFiber )
+		return;
+
+	// mode 0: 2D pass over everything (native size); other modes: camera facing quad drawn BEFORE the view model,
+	// so the hands and the torch cover it
+	if( worldPass != ( cvMode->value >= 0.5f ))
 		return;
 
 	vec3_t fw, rt, up;
@@ -410,17 +416,16 @@ void CZ_DrawTorchSprites( void )
 		vec3_t c, scr;
 		for( int i = 0; i < 3; i++ )
 			c[i] = g_czTorchPos[i] + fw[i] * cv[k][1]->value + rt[i] * cv[k][2]->value + up[i] * cv[k][3]->value;
-		if( gEngfuncs.pTriAPI->WorldToScreen( c, scr ))
-			continue; // behind the camera
-
-		float cx = ( 1.0f + scr[0] ) * 0.5f * ScreenWidth;
-		float cy = ( 1.0f - scr[1] ) * 0.5f * ScreenHeight;
 		float al = cv[k][5]->value * ( g_czTorchAtk ? 1.3f : 1.0f );
 		if( al > 1.0f ) al = 1.0f;
 		if( al < 0.0f ) al = 0.0f;
 
-		if( cvMode->value < 0.5f )
+		if( !worldPass )
 		{
+			if( gEngfuncs.pTriAPI->WorldToScreen( c, scr ))
+				continue; // behind the camera
+			float cx = ( 1.0f + scr[0] ) * 0.5f * ScreenWidth;
+			float cy = ( 1.0f - scr[1] ) * 0.5f * ScreenHeight;
 			if( !hspr[k] )
 				continue;
 			int w = SPR_Width( hspr[k], 0 ), h = SPR_Height( hspr[k], 0 );
@@ -431,13 +436,39 @@ void CZ_DrawTorchSprites( void )
 		{
 			if( !mspr[k] )
 				continue;
-			float half = cv[k][4]->value * g_czTorchSize * ( ScreenHeight / 480.0f );
+			// half size in world units: cz_torchN_size is in 0.1 unit steps
+			float half = cv[k][4]->value * 0.1f * g_czTorchSize;
+			vec3_t a, b, p0, p1, p2, p3;
+			for( int i = 0; i < 3; i++ )
+			{
+				a[i] = rt[i] * half;
+				b[i] = up[i] * half;
+				p0[i] = c[i] - a[i] + b[i];
+				p1[i] = c[i] + a[i] + b[i];
+				p2[i] = c[i] + a[i] - b[i];
+				p3[i] = c[i] - a[i] - b[i];
+			}
 			gEngfuncs.pTriAPI->SpriteTexture( mspr[k], 0 );
 			gEngfuncs.pTriAPI->RenderMode( kRenderTransAdd );
 			gEngfuncs.pTriAPI->CullFace( TRI_NONE );
+			gEngfuncs.pTriAPI->Begin( TRI_QUADS );
 			gEngfuncs.pTriAPI->Color4f( 1.0f, 0.85f, 0.92f, al );
-			DrawUtils::Draw2DQuad( cx - half, cy - half, cx + half, cy + half );
+			gEngfuncs.pTriAPI->TexCoord2f( 0, 0 ); gEngfuncs.pTriAPI->Vertex3fv( p0 );
+			gEngfuncs.pTriAPI->TexCoord2f( 1, 0 ); gEngfuncs.pTriAPI->Vertex3fv( p1 );
+			gEngfuncs.pTriAPI->TexCoord2f( 1, 1 ); gEngfuncs.pTriAPI->Vertex3fv( p2 );
+			gEngfuncs.pTriAPI->TexCoord2f( 0, 1 ); gEngfuncs.pTriAPI->Vertex3fv( p3 );
+			gEngfuncs.pTriAPI->End();
 			gEngfuncs.pTriAPI->RenderMode( kRenderNormal );
 		}
 	}
+}
+
+void CZ_DrawTorchSprites( void )
+{
+	CZ_TorchDraw( false );
+}
+
+void CZ_DrawTorchWorld( void )
+{
+	CZ_TorchDraw( true );
 }

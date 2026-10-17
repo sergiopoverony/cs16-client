@@ -50,9 +50,12 @@ HUD_DrawNormalTriangles
 Non-transparent triangles-- add them here
 =================
 */
+void CZ_DrawTorchWorld( void );
+
 void DLLEXPORT HUD_DrawNormalTriangles( void )
 {
 	gHUD.m_Spectator.DrawOverview();
+	CZ_DrawTorchWorld();
 }
 
 /*

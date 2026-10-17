@@ -43,7 +43,7 @@ int CHudNVG::Init()
 	HOOK_COMMAND( gHUD.m_NVG,"nvgadjustdown", NVGAdjustDown);
 
 	cl_fancy_nvg = CVAR_CREATE( "cl_fancy_nvg", "0", FCVAR_ARCHIVE );
-	cz_nvg_lines = CVAR_CREATE( "cz_nvg_lines", "70", 0 ); // number of scan lines on the screen height
+	cz_nvg_lines = CVAR_CREATE( "cz_nvg_lines", "150", 0 ); // number of scan lines on the screen height
 
 	gHUD.AddHudElem(this);
 	m_iFlags = 0;
