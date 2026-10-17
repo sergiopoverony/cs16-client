@@ -359,7 +359,7 @@ extern float g_czTorchSize;
 // Blowtorch flame: two sprites (core + halo) projected onto the screen and drawn in the 2D pass,
 // so the view model cannot hide them with its depth.
 // cz_torch_mode 0 = native-size HUD sprite draw (SPR_DrawAdditive), 1 = scaled 2D quad (cz_torchN_size)
-static void CZ_TorchDraw( bool worldPass )
+static void CZ_TorchDraw( int pass )
 {
 	static cvar_t *cv[2][6];
 	static cvar_t *cvMode = nullptr;
@@ -372,7 +372,7 @@ static void CZ_TorchDraw( bool worldPass )
 		static const char *defSize[2] = { "10", "30" };
 		static const char *defAlpha[2] = { "1.0", "0.2" };
 		static const char *defFwd[2] = { "0", "-3" };
-		cvMode = gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) ? gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) : gEngfuncs.pfnRegisterVariable( "cz_torch_mode", "2", 0 );
+		cvMode = gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) ? gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) : gEngfuncs.pfnRegisterVariable( "cz_torch_mode", "0", 0 );
 		for( int k = 0; k < 2; k++ )
 		{
 			char n[64];
@@ -393,8 +393,14 @@ static void CZ_TorchDraw( bool worldPass )
 
 	// mode 0: 2D pass over everything (native size); other modes: camera facing quad drawn BEFORE the view model,
 	// so the hands and the torch cover it
-	if( worldPass != ( cvMode->value >= 0.5f ))
-		return;
+	// pass 0 = 2D (mode 0), 1 = TriAPI quad (modes 1, 2), 2 = real sprite entities (mode 3: engine draws them, scalable, behind the hands)
+	{
+		int m = (int)( cvMode->value + 0.5f );
+		int want = ( m <= 0 ) ? 0 : ( m >= 3 ? 2 : 1 );
+		if( pass != want )
+			return;
+	}
+	bool worldPass = ( pass == 1 );
 
 	vec3_t fw, rt, up;
 	gEngfuncs.pfnAngleVectors( v_angles, fw, rt, up );
@@ -420,7 +426,30 @@ static void CZ_TorchDraw( bool worldPass )
 		if( al > 1.0f ) al = 1.0f;
 		if( al < 0.0f ) al = 0.0f;
 
-		if( !worldPass )
+		if( pass == 2 )
+		{
+			static cl_entity_t ents[2];
+			const model_s *m = hspr[k] ? gEngfuncs.GetSpritePointer( hspr[k] ) : nullptr;
+			if( !m )
+				continue;
+			cl_entity_t *e = &ents[k];
+			memset( e, 0, sizeof( *e ));
+			e->model = (model_s *)m;
+			VectorCopy( c, e->origin );
+			VectorCopy( c, e->curstate.origin );
+			e->curstate.rendermode = kRenderTransAdd;
+			e->curstate.renderamt = (int)( 255 * al );
+			e->curstate.rendercolor.r = 255;
+			e->curstate.rendercolor.g = 217;
+			e->curstate.rendercolor.b = 235;
+			e->curstate.renderfx = 0;
+			e->curstate.frame = 0;
+			int w = SPR_Width( hspr[k], 0 );
+			float half = cv[k][4]->value * 0.1f * g_czTorchSize; // units
+			e->curstate.scale = ( w > 0 ) ? ( half * 2.0f / (float)w ) : 1.0f;
+			gEngfuncs.CL_CreateVisibleEntity( ET_NORMAL, e );
+		}
+		else if( !worldPass )
 		{
 			if( gEngfuncs.pTriAPI->WorldToScreen( c, scr ))
 				continue; // behind the camera
@@ -465,10 +494,15 @@ static void CZ_TorchDraw( bool worldPass )
 
 void CZ_DrawTorchSprites( void )
 {
-	CZ_TorchDraw( false );
+	CZ_TorchDraw( 0 );
+}
+
+void CZ_TorchEntities( void )
+{
+	CZ_TorchDraw( 2 );
 }
 
 void CZ_DrawTorchWorld( void )
 {
-	CZ_TorchDraw( true );
+	CZ_TorchDraw( 1 );
 }

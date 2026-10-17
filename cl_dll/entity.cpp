@@ -236,6 +236,7 @@ bool g_czTorchAtk = false;
 
 // blowtorch flame: a small pink-white flame at the nozzle plus a soft light on the walls.
 // The position is computed from the view (cz_torch_fwd/right/up, tweakable live); the view model attachment is optional (cz_torch_att 1)
+void CZ_TorchEntities( void );
 static void CZ_TorchFlame( void )
 {
 	static cvar_t *fwd, *right, *up, *att, *size;
@@ -298,6 +299,7 @@ static void CZ_TorchFlame( void )
 	g_czTorchOn = true;
 	g_czTorchSize = sz * flick * ( atk ? 1.4f : 1.0f );
 	g_czTorchAtk = atk;
+	CZ_TorchEntities();
 }
 
 void DLLEXPORT HUD_CreateEntities( void )
