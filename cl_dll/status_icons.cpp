@@ -372,18 +372,18 @@ static void CZ_TorchDraw( int pass )
 	static char sprName[2][64] = { "", "" };
 	if( !cv[0][0] )
 	{
-		static const char *defName[2] = { "sprites/flare3.spr", "sprites/flare2.spr" };
-		static const char *defSize[2] = { "10", "30" };
+		static const char *defName[2] = { "sprites/flare3.spr", "sprites/flare3.spr" };
+		static const char *defSize[2] = { "5", "35" };
 		static const char *defAlpha[2] = { "1.0", "0.2" };
-		static const char *defFwd[2] = { "0", "-3" };
-		cvMode = gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) ? gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) : gEngfuncs.pfnRegisterVariable( "cz_torch_mode", "0", 0 );
+		static const char *defFwd[2] = { "-1", "-2" };
+		cvMode = gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) ? gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) : gEngfuncs.pfnRegisterVariable( "cz_torch_mode", "3", 0 );
 		for( int k = 0; k < 2; k++ )
 		{
 			char n[64];
 			snprintf( n, sizeof n, "cz_torch%d_spr", k + 1 );   cv[k][0] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defName[k], 0 );
 			snprintf( n, sizeof n, "cz_torch%d_fwd", k + 1 );   cv[k][1] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defFwd[k], 0 );
 			snprintf( n, sizeof n, "cz_torch%d_right", k + 1 ); cv[k][2] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, "0", 0 );
-			snprintf( n, sizeof n, "cz_torch%d_up", k + 1 );    cv[k][3] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, "0", 0 );
+			snprintf( n, sizeof n, "cz_torch%d_up", k + 1 );    cv[k][3] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, k ? "0" : "0.15", 0 );
 			snprintf( n, sizeof n, "cz_torch%d_size", k + 1 );  cv[k][4] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defSize[k], 0 );
 			snprintf( n, sizeof n, "cz_torch%d_alpha", k + 1 ); cv[k][5] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defAlpha[k], 0 );
 		}

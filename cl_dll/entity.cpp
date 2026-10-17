@@ -245,10 +245,10 @@ static void CZ_TorchFlame( void )
 		return;
 	if( !fwd )
 	{
-		fwd   = gEngfuncs.pfnRegisterVariable( "cz_torch_fwd",   "50", 0 );
-		right = gEngfuncs.pfnRegisterVariable( "cz_torch_right", "17", 0 );
-		up    = gEngfuncs.pfnRegisterVariable( "cz_torch_up",    "-10",  0 );
-		att   = gEngfuncs.pfnRegisterVariable( "cz_torch_att",   "0",  0 );
+		fwd   = gEngfuncs.pfnRegisterVariable( "cz_torch_fwd",   "20", 0 );
+		right = gEngfuncs.pfnRegisterVariable( "cz_torch_right", "7", 0 );
+		up    = gEngfuncs.pfnRegisterVariable( "cz_torch_up",    "-4",  0 );
+		att   = gEngfuncs.pfnRegisterVariable( "cz_torch_att",   "1",  0 );
 		size  = gEngfuncs.pfnRegisterVariable( "cz_torch_size",  "1",  0 );
 	}
 	vec3_t f, r, u, pos;

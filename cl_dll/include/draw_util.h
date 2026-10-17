@@ -171,16 +171,16 @@ public:
 
 	static inline void DrawRectangle( int x, int y, int wide, int tall,
 						   int r = 0, int g = 0, int b = 0, int a = 153,
-						   bool drawStroke = true )
+						   bool drawStroke = true, int sr = 255, int sg = 140, int sb = 0 )
 	{
 		FillRGBABlend( x, y, wide, tall, r, g, b, a );
 		if ( drawStroke )
 		{
 			// TODO: remove this hardcoded hardcore
-			FillRGBA( x + 1,        y,            wide - 1, 1,        255, 140, 0, 255 );
-			FillRGBA( x,            y,            1,        tall - 1, 255, 140, 0, 255 );
-			FillRGBA( x + wide - 1, y + 1,        1,        tall - 1, 255, 140, 0, 255 );
-			FillRGBA( x,            y + tall - 1, wide - 1, 1,        255, 140, 0, 255 );
+			FillRGBA( x + 1,        y,            wide - 1, 1,        sr, sg, sb, 255 );
+			FillRGBA( x,            y,            1,        tall - 1, sr, sg, sb, 255 );
+			FillRGBA( x + wide - 1, y + 1,        1,        tall - 1, sr, sg, sb, 255 );
+			FillRGBA( x,            y + tall - 1, wide - 1, 1,        sr, sg, sb, 255 );
 		}
 	}
 
