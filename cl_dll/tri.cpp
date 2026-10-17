@@ -62,9 +62,12 @@ HUD_DrawTransparentTriangles
 Render any triangles with transparent rendermode needs here
 =================
 */
+void CZ_DrawTorchSprites( void );
+
 void DLLEXPORT HUD_DrawTransparentTriangles( void )
 {
 	RenderFog();
+	CZ_DrawTorchSprites();
 
 	if ( g_pParticleMan )
 	{

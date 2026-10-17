@@ -154,65 +154,6 @@ static void CZ_DrawTools( float flTime )
 		}
 	}
 
-	// blowtorch flame: a small pink-white spot with a soft halo, projected onto the screen so the view model cannot hide it
-	{
-		extern vec3_t g_czTorchPos, v_angles;
-		extern bool g_czTorchOn, g_czTorchAtk;
-		extern float g_czTorchSize;
-		// two flame sprites (like env_glow), each with its own sprite name, offset (fwd/right/up in units, relative to the nozzle),
-		// size and brightness: cz_torch1_* and cz_torch2_*; the sprite name can be changed live (sprites/flare3.spr, glow01.spr, glow03.spr, fire.spr ...)
-		static cvar_t *cv[2][6];
-		static model_t *spr[2] = { nullptr, nullptr };
-		static char sprName[2][64] = { "", "" };
-		if( !cv[0][0] )
-		{
-			static const char *defName[2] = { "sprites/flare3.spr", "sprites/glow01.spr" };
-			static const char *defSize[2] = { "6", "20" };
-			static const char *defAlpha[2] = { "1.0", "0.4" };
-			for( int k = 0; k < 2; k++ )
-			{
-				char n[64];
-				snprintf( n, sizeof n, "cz_torch%d_spr", k + 1 );   cv[k][0] = gEngfuncs.pfnRegisterVariable( n, defName[k], 0 );
-				snprintf( n, sizeof n, "cz_torch%d_fwd", k + 1 );   cv[k][1] = gEngfuncs.pfnRegisterVariable( n, "0", 0 );
-				snprintf( n, sizeof n, "cz_torch%d_right", k + 1 ); cv[k][2] = gEngfuncs.pfnRegisterVariable( n, "0", 0 );
-				snprintf( n, sizeof n, "cz_torch%d_up", k + 1 );    cv[k][3] = gEngfuncs.pfnRegisterVariable( n, "0", 0 );
-				snprintf( n, sizeof n, "cz_torch%d_size", k + 1 );  cv[k][4] = gEngfuncs.pfnRegisterVariable( n, defSize[k], 0 );
-				snprintf( n, sizeof n, "cz_torch%d_alpha", k + 1 ); cv[k][5] = gEngfuncs.pfnRegisterVariable( n, defAlpha[k], 0 );
-			}
-		}
-		if( g_czTorchOn && g_czTool == 3 && !g_czFiber )
-		{
-			vec3_t fw, rt, up;
-			gEngfuncs.pfnAngleVectors( v_angles, fw, rt, up );
-			gEngfuncs.pTriAPI->RenderMode( kRenderTransAdd );
-			gEngfuncs.pTriAPI->CullFace( TRI_NONE );
-			for( int k = 0; k < 2; k++ )
-			{
-				const char *nm = cv[k][0]->string;
-				if( !spr[k] || strcmp( nm, sprName[k] ) )
-				{
-					snprintf( sprName[k], sizeof sprName[k], "%s", nm );
-					spr[k] = gEngfuncs.LoadMapSprite( sprName[k] );
-				}
-				if( !spr[k] )
-					continue;
-				vec3_t w, scr;
-				for( int i = 0; i < 3; i++ )
-					w[i] = g_czTorchPos[i] + fw[i] * cv[k][1]->value + rt[i] * cv[k][2]->value + up[i] * cv[k][3]->value;
-				if( gEngfuncs.pTriAPI->WorldToScreen( w, scr ) )
-					continue;
-				float cx = ( 1.0f + scr[0] ) * 0.5f * ScreenWidth;
-				float cy = ( 1.0f - scr[1] ) * 0.5f * ScreenHeight;
-				float h = cv[k][4]->value * ( ScreenHeight / 480.0f ) * g_czTorchSize;
-				float al = cv[k][5]->value * ( g_czTorchAtk ? 1.3f : 1.0f );
-				if( al > 1.0f ) al = 1.0f;
-				gEngfuncs.pTriAPI->SpriteTexture( spr[k], 0 );
-				gEngfuncs.pTriAPI->Color4f( 1.0f, 0.85f, 0.92f, al );
-				DrawUtils::Draw2DQuad( cx - h, cy - h, cx + h, cy + h );
-			}
-		}
-	}
-
 	if( g_czTool < 1 || g_czTool > 5 )
 		return;
 
@@ -403,4 +344,78 @@ void CHudStatusIcons::DisableIcon( const char *pszIconName )
 			return;
 		}
 	}
+}
+
+
+// blowtorch flame: two camera facing sprites (like env_glow) drawn in the transparent pass, after the view model.
+// cvars cz_torch1_* and cz_torch2_*: spr (sprite name), fwd/right/up (offset from the nozzle, units), size (half size, 0.1 unit steps), alpha
+extern vec3_t g_czTorchPos, v_angles;
+extern bool g_czTorchOn, g_czTorchAtk;
+extern float g_czTorchSize;
+
+void CZ_DrawTorchSprites( void )
+{
+	static cvar_t *cv[2][6];
+	static model_t *spr[2] = { nullptr, nullptr };
+	static char sprName[2][64] = { "", "" };
+	if( !cv[0][0] )
+	{
+		static const char *defName[2] = { "sprites/flare3.spr", "sprites/glow01.spr" };
+		static const char *defSize[2] = { "10", "30" };
+		static const char *defAlpha[2] = { "1.0", "0.4" };
+		for( int k = 0; k < 2; k++ )
+		{
+			char n[64];
+			snprintf( n, sizeof n, "cz_torch%d_spr", k + 1 );   cv[k][0] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defName[k], 0 );
+			snprintf( n, sizeof n, "cz_torch%d_fwd", k + 1 );   cv[k][1] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, "0", 0 );
+			snprintf( n, sizeof n, "cz_torch%d_right", k + 1 ); cv[k][2] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, "0", 0 );
+			snprintf( n, sizeof n, "cz_torch%d_up", k + 1 );    cv[k][3] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, "0", 0 );
+			snprintf( n, sizeof n, "cz_torch%d_size", k + 1 );  cv[k][4] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defSize[k], 0 );
+			snprintf( n, sizeof n, "cz_torch%d_alpha", k + 1 ); cv[k][5] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defAlpha[k], 0 );
+		}
+	}
+
+	if( !g_czTorchOn || g_czTool != 3 || g_czFiber )
+		return;
+
+	vec3_t fw, rt, up;
+	gEngfuncs.pfnAngleVectors( v_angles, fw, rt, up );
+
+	for( int k = 0; k < 2; k++ )
+	{
+		const char *nm = cv[k][0]->string;
+		if( !spr[k] || strcmp( nm, sprName[k] ) )
+		{
+			snprintf( sprName[k], sizeof sprName[k], "%s", nm );
+			spr[k] = gEngfuncs.LoadMapSprite( sprName[k] );
+		}
+		if( !spr[k] )
+			continue;
+
+		vec3_t c;
+		for( int i = 0; i < 3; i++ )
+			c[i] = g_czTorchPos[i] + fw[i] * cv[k][1]->value + rt[i] * cv[k][2]->value + up[i] * cv[k][3]->value;
+
+		float h = cv[k][4]->value * 0.1f * g_czTorchSize;
+		float al = cv[k][5]->value * ( g_czTorchAtk ? 1.3f : 1.0f );
+		if( al > 1.0f ) al = 1.0f;
+
+		gEngfuncs.pTriAPI->SpriteTexture( spr[k], 0 );
+		gEngfuncs.pTriAPI->RenderMode( kRenderTransAdd );
+		gEngfuncs.pTriAPI->CullFace( TRI_NONE );
+		gEngfuncs.pTriAPI->Color4f( 1.0f, 0.85f, 0.92f, al );
+		gEngfuncs.pTriAPI->Begin( TRI_QUADS );
+		for( int v = 0; v < 4; v++ )
+		{
+			static const float sx[4] = { -1, -1, 1, 1 }, sy[4] = { 1, -1, -1, 1 };
+			static const float tu[4] = { 0, 0, 1, 1 }, tv[4] = { 0, 1, 1, 0 };
+			vec3_t p;
+			for( int i = 0; i < 3; i++ )
+				p[i] = c[i] + rt[i] * sx[v] * h + up[i] * sy[v] * h;
+			gEngfuncs.pTriAPI->TexCoord2f( tu[v], tv[v] );
+			gEngfuncs.pTriAPI->Vertex3fv( p );
+		}
+		gEngfuncs.pTriAPI->End();
+	}
+	gEngfuncs.pTriAPI->RenderMode( kRenderNormal );
 }
