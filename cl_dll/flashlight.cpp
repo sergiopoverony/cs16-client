@@ -27,6 +27,7 @@
 
 #include "draw_util.h"
 #include "pm_shared.h"
+#include "weapontype.h"
 
 #define BAT_NAME "sprites/%d_Flashlight.spr"
 
