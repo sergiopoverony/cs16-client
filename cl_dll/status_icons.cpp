@@ -150,6 +150,34 @@ static void CZ_DrawTools( float flTime )
 		}
 	}
 
+	// blowtorch flame: a small pink-white spot with a soft halo, projected onto the screen so the view model cannot hide it
+	{
+		extern vec3_t g_czTorchPos;
+		extern bool g_czTorchOn, g_czTorchAtk;
+		extern float g_czTorchSize;
+		static model_t *flameSpr = nullptr;
+		if( g_czTorchOn && g_czTool == 3 && !g_czFiber )
+		{
+			if( !flameSpr )
+				flameSpr = gEngfuncs.LoadMapSprite( "sprites/glow01.spr" );
+			vec3_t scr;
+			if( flameSpr && !gEngfuncs.pTriAPI->WorldToScreen( g_czTorchPos, scr ) )
+			{
+				float cx = ( 1.0f + scr[0] ) * 0.5f * ScreenWidth;
+				float cy = ( 1.0f - scr[1] ) * 0.5f * ScreenHeight;
+				float u = ScreenHeight / 480.0f;
+				gEngfuncs.pTriAPI->SpriteTexture( flameSpr, 0 );
+				gEngfuncs.pTriAPI->RenderMode( kRenderTransAdd );
+				gEngfuncs.pTriAPI->CullFace( TRI_NONE );
+				float halo = 26.0f * u * g_czTorchSize, core = 7.0f * u * g_czTorchSize;
+				gEngfuncs.pTriAPI->Color4f( 0.92f, 0.55f, 0.75f, g_czTorchAtk ? 0.55f : 0.40f );
+				DrawUtils::Draw2DQuad( cx - halo, cy - halo, cx + halo, cy + halo );
+				gEngfuncs.pTriAPI->Color4f( 1.0f, 0.85f, 0.92f, 1.0f );
+				DrawUtils::Draw2DQuad( cx - core, cy - core, cx + core, cy + core );
+			}
+		}
+	}
+
 	if( g_czTool < 1 || g_czTool > 4 )
 		return;
 
@@ -262,7 +290,7 @@ int CHudStatusIcons::MsgFunc_HudIcons( const char *pszName, int iSize, void *pbu
 		if( shown & icons[k].bit )
 		{
 			// tools: green while the player is inside their zone, red otherwise
-			if( ( active & icons[k].bit ) || icons[k].bit == 1 || icons[k].bit == 512 || icons[k].bit == 1024 )
+			if( ( ( active & icons[k].bit ) && ( owned & icons[k].bit ) ) || icons[k].bit == 1 || icons[k].bit == 512 || icons[k].bit == 1024 )
 				EnableIcon( icons[k].name, 50, 250, 50 );
 			else
 				EnableIcon( icons[k].name, 250, 60, 60 );

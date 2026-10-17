@@ -710,7 +710,7 @@ private:
 //
 //-----------------------------------------------------
 //
-#define MAX_SPRITE_NAME_LENGTH	24
+#define MAX_SPRITE_NAME_LENGTH	32 // CZ: "icon_radiocontrolledbomb" is 24 characters, the old 24-byte buffer lost its terminator
 
 class CHudStatusIcons: public CHudBase
 {

@@ -229,14 +229,17 @@ int g_czToolsOwned = 0; // CZ tool mask from the HudIcons message
 
 // CZ: blowtorch flame, drawn in the view so it does not lag behind the camera
 extern int g_czTool, g_czFiber;
+vec3_t g_czTorchPos;
+bool g_czTorchOn = false;
+float g_czTorchSize = 1.0f;
+bool g_czTorchAtk = false;
 
 // blowtorch flame: a small pink-white flame at the nozzle plus a soft light on the walls.
 // The position is computed from the view (cz_torch_fwd/right/up, tweakable live); the view model attachment is optional (cz_torch_att 1)
 static void CZ_TorchFlame( void )
 {
-	static cl_entity_t core, halo;
-	static model_t *spr = nullptr;
 	static cvar_t *fwd, *right, *up, *att, *size;
+	g_czTorchOn = false;
 	if( g_czTool != 3 || g_czFiber || !gEngfuncs.GetLocalPlayer() || gEngfuncs.IsSpectateOnly() )
 		return;
 	if( !fwd )
@@ -247,15 +250,6 @@ static void CZ_TorchFlame( void )
 		att   = gEngfuncs.pfnRegisterVariable( "cz_torch_att",   "0",  0 );
 		size  = gEngfuncs.pfnRegisterVariable( "cz_torch_size",  "1",  0 );
 	}
-	if( !spr )
-	{
-		spr = gEngfuncs.LoadMapSprite( "sprites/glow01.spr" );
-		if( !spr ) return;
-		memset( &core, 0, sizeof( core ) );
-		memset( &halo, 0, sizeof( halo ) );
-		core.model = halo.model = spr;
-	}
-
 	vec3_t f, r, u, pos;
 	gEngfuncs.pfnAngleVectors( v_angles, f, r, u );
 
@@ -299,27 +293,11 @@ static void CZ_TorchFlame( void )
 		dl->decay = 0;
 	}
 
-	VectorCopy( pos, core.origin );
-	core.curstate.rendermode = kRenderTransAdd;
-	core.curstate.renderamt = 255;
-	core.curstate.rendercolor.r = 255;
-	core.curstate.rendercolor.g = 210;
-	core.curstate.rendercolor.b = 230;
-	core.curstate.scale = 0.05f * sz * flick * ( atk ? 1.4f : 1.0f );
-	core.curstate.frame = 0;
-	core.curstate.entityType = ET_NORMAL;
-	gEngfuncs.CL_CreateVisibleEntity( ET_NORMAL, &core );
-
-	VectorCopy( pos, halo.origin );
-	halo.curstate.rendermode = kRenderTransAdd;
-	halo.curstate.renderamt = atk ? 90 : 60;
-	halo.curstate.rendercolor.r = 235;
-	halo.curstate.rendercolor.g = 140;
-	halo.curstate.rendercolor.b = 190;
-	halo.curstate.scale = 0.12f * sz * flick * ( atk ? 1.3f : 1.0f );
-	halo.curstate.frame = 0;
-	halo.curstate.entityType = ET_NORMAL;
-	gEngfuncs.CL_CreateVisibleEntity( ET_NORMAL, &halo );
+	// the flame itself is drawn by the HUD (status_icons.cpp) on top of the view model, from this point
+	VectorCopy( pos, g_czTorchPos );
+	g_czTorchOn = true;
+	g_czTorchSize = sz * flick * ( atk ? 1.4f : 1.0f );
+	g_czTorchAtk = atk;
 }
 
 void DLLEXPORT HUD_CreateEntities( void )
