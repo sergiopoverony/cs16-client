@@ -18,6 +18,7 @@
 #include "hud.h"
 #include "cl_util.h"
 #include "draw_util.h"
+#include "com_model.h"
 #include "triangleapi.h"
 #include "r_efx.h"
 #include "const.h"
