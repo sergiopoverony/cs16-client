@@ -43,6 +43,7 @@ int CHudNVG::Init()
 	HOOK_COMMAND( gHUD.m_NVG,"nvgadjustdown", NVGAdjustDown);
 
 	cl_fancy_nvg = CVAR_CREATE( "cl_fancy_nvg", "0", FCVAR_ARCHIVE );
+	cz_nvg_lines = CVAR_CREATE( "cz_nvg_lines", "70", 0 ); // number of scan lines on the screen height
 
 	gHUD.AddHudElem(this);
 	m_iFlags = 0;
@@ -59,15 +60,11 @@ int CHudNVG::Draw(float flTime)
 		return 1;
 	}
 
-	gEngfuncs.pfnFillRGBABlend(0, 0, ScreenWidth, ScreenHeight, 50, 225, 50, m_iAlpha);
-
-	// horizontal scan lines like the original, and the night vision icon in the top right corner
+	// the icon in the top right corner: shown as soon as the goggles are owned (CZ maps),
+	// red while they are off and green while they are on
+	const char *lvlName = gEngfuncs.pfnGetLevelName();
+	if( m_bOwned && lvlName && strstr( lvlName, "cz_" ))
 	{
-		int step = ScreenHeight / 190;
-		if( step < 3 ) step = 3;
-		for( int y = 0; y < ScreenHeight; y += step )
-			gEngfuncs.pfnFillRGBABlend( 0, y, ScreenWidth, 1 + step / 4, 0, 30, 0, 70 );
-
 		int idx = gHUD.GetSpriteIndex( "icon_nightvision" );
 		if( idx >= 0 )
 		{
@@ -75,10 +72,28 @@ int CHudNVG::Draw(float flTime)
 			wrect_t rc = gHUD.GetSpriteRect( idx );
 			if( spr )
 			{
-				SPR_Set( spr, 50, 250, 50 );
+				if( m_bOn ) SPR_Set( spr, 50, 250, 50 );
+				else SPR_Set( spr, 250, 50, 50 );
 				SPR_DrawAdditive( 0, ScreenWidth - ( rc.right - rc.left ) - ScreenWidth / 64, ScreenHeight / 48, &rc );
 			}
 		}
+	}
+
+	if( !m_bOn )
+		return 1;
+
+	gEngfuncs.pfnFillRGBABlend(0, 0, ScreenWidth, ScreenHeight, 50, 225, 50, m_iAlpha);
+
+	// horizontal scan lines like the original (bigger and rarer; cz_nvg_lines = lines per screen height)
+	{
+		float n = cz_nvg_lines->value;
+		if( n < 10.0f ) n = 10.0f;
+		int step = (int)( ScreenHeight / n );
+		if( step < 4 ) step = 4;
+		int thick = step / 2;
+		if( thick < 2 ) thick = 2;
+		for( int y = 0; y < ScreenHeight; y += step )
+			gEngfuncs.pfnFillRGBABlend( 0, y, ScreenWidth, thick, 0, 30, 0, 80 );
 	}
 
 	// draw a dynamic light on player's origin
@@ -120,7 +135,8 @@ int CHudNVG::Draw(float flTime)
 
 void CHudNVG::Reset( void )
 {
-	m_iFlags = 0;
+	m_iFlags = m_bOwned ? HUD_DRAW : 0;
+	m_bOn = false;
 
 	if( m_pLight )
 	{
@@ -134,7 +150,17 @@ int CHudNVG::MsgFunc_NVGToggle(const char *pszName, int iSize, void *pbuf)
 {
 	BufferReader reader( pszName, pbuf, iSize );
 
-	m_iFlags = reader.ReadByte() ? HUD_DRAW : 0;
+	// 0 off, 1 on, 2 owned (off), 3 not owned
+	int v = reader.ReadByte();
+	if( v == 1 ) { m_bOn = true; m_bOwned = true; }
+	else if( v == 2 ) { m_bOn = false; m_bOwned = true; }
+	else if( v == 3 ) { m_bOn = false; m_bOwned = false; }
+	else m_bOn = false;
+
+	// outside of the CZ maps the icon is not drawn
+	const char *lvl = gEngfuncs.pfnGetLevelName();
+	bool cz = lvl && strstr( lvl, "cz_" );
+	m_iFlags = ( m_bOn || ( m_bOwned && cz ) ) ? HUD_DRAW : 0;
 
 	if( m_pLight )
 	{

@@ -881,7 +881,10 @@ public:
 private:
 	int m_iAlpha;
 	cvar_t *cl_fancy_nvg;
+	cvar_t *cz_nvg_lines;
 	dlight_t *m_pLight;
+	bool m_bOwned = false;
+	bool m_bOn = false;
 };
 
 //

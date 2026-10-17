@@ -180,6 +180,8 @@ static void CZ_DrawTools( float flTime )
 	}
 }
 
+void CZ_DrawTorchSprites( void );
+
 // Draw status icons along the left-hand side of the screen
 int CHudStatusIcons::Draw( float flTime )
 {
@@ -187,6 +189,7 @@ int CHudStatusIcons::Draw( float flTime )
 		return 1;
 
 	CZ_DrawTools( flTime );
+	CZ_DrawTorchSprites();
 	// find starting position to draw from, along right-hand side of screen
 	int x = 5;
 	int y = ScreenHeight / 2;
@@ -353,16 +356,22 @@ extern vec3_t g_czTorchPos, v_angles;
 extern bool g_czTorchOn, g_czTorchAtk;
 extern float g_czTorchSize;
 
+// Blowtorch flame: two sprites (core + halo) projected onto the screen and drawn in the 2D pass,
+// so the view model cannot hide them with its depth.
+// cz_torch_mode 0 = native-size HUD sprite draw (SPR_DrawAdditive), 1 = scaled 2D quad (cz_torchN_size)
 void CZ_DrawTorchSprites( void )
 {
 	static cvar_t *cv[2][6];
-	static model_t *spr[2] = { nullptr, nullptr };
+	static cvar_t *cvMode = nullptr;
+	static HSPRITE hspr[2] = { 0, 0 };
+	static model_t *mspr[2] = { nullptr, nullptr };
 	static char sprName[2][64] = { "", "" };
 	if( !cv[0][0] )
 	{
 		static const char *defName[2] = { "sprites/flare3.spr", "sprites/glow01.spr" };
 		static const char *defSize[2] = { "10", "30" };
 		static const char *defAlpha[2] = { "1.0", "0.4" };
+		cvMode = gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) ? gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) : gEngfuncs.pfnRegisterVariable( "cz_torch_mode", "0", 0 );
 		for( int k = 0; k < 2; k++ )
 		{
 			char n[64];
@@ -375,6 +384,9 @@ void CZ_DrawTorchSprites( void )
 		}
 	}
 
+	extern vec3_t g_czTorchPos;
+	extern bool g_czTorchOn, g_czTorchAtk;
+	extern float g_czTorchSize;
 	if( !g_czTorchOn || g_czTool != 3 || g_czFiber )
 		return;
 
@@ -384,38 +396,48 @@ void CZ_DrawTorchSprites( void )
 	for( int k = 0; k < 2; k++ )
 	{
 		const char *nm = cv[k][0]->string;
-		if( !spr[k] || strcmp( nm, sprName[k] ) )
+		if( strcmp( nm, sprName[k] ) )
 		{
 			snprintf( sprName[k], sizeof sprName[k], "%s", nm );
-			spr[k] = gEngfuncs.LoadMapSprite( sprName[k] );
+			hspr[k] = SPR_Load( sprName[k] );
+			mspr[k] = gEngfuncs.LoadMapSprite( sprName[k] );
+			if( hspr[k] )
+				gEngfuncs.Con_Printf( "torch sprite %d: %s %dx%d, frames %d\n", k + 1, sprName[k], SPR_Width( hspr[k], 0 ), SPR_Height( hspr[k], 0 ), gEngfuncs.pfnSPR_Frames( hspr[k] ));
+			else
+				gEngfuncs.Con_Printf( "torch sprite %d: %s not found\n", k + 1, sprName[k] );
 		}
-		if( !spr[k] )
-			continue;
 
-		vec3_t c;
+		vec3_t c, scr;
 		for( int i = 0; i < 3; i++ )
 			c[i] = g_czTorchPos[i] + fw[i] * cv[k][1]->value + rt[i] * cv[k][2]->value + up[i] * cv[k][3]->value;
+		if( gEngfuncs.pTriAPI->WorldToScreen( c, scr ))
+			continue; // behind the camera
 
-		float h = cv[k][4]->value * 0.1f * g_czTorchSize;
+		float cx = ( 1.0f + scr[0] ) * 0.5f * ScreenWidth;
+		float cy = ( 1.0f - scr[1] ) * 0.5f * ScreenHeight;
 		float al = cv[k][5]->value * ( g_czTorchAtk ? 1.3f : 1.0f );
 		if( al > 1.0f ) al = 1.0f;
+		if( al < 0.0f ) al = 0.0f;
 
-		gEngfuncs.pTriAPI->SpriteTexture( spr[k], 0 );
-		gEngfuncs.pTriAPI->RenderMode( kRenderTransAdd );
-		gEngfuncs.pTriAPI->CullFace( TRI_NONE );
-		gEngfuncs.pTriAPI->Color4f( 1.0f, 0.85f, 0.92f, al );
-		gEngfuncs.pTriAPI->Begin( TRI_QUADS );
-		for( int v = 0; v < 4; v++ )
+		if( cvMode->value < 0.5f )
 		{
-			static const float sx[4] = { -1, -1, 1, 1 }, sy[4] = { 1, -1, -1, 1 };
-			static const float tu[4] = { 0, 0, 1, 1 }, tv[4] = { 0, 1, 1, 0 };
-			vec3_t p;
-			for( int i = 0; i < 3; i++ )
-				p[i] = c[i] + rt[i] * sx[v] * h + up[i] * sy[v] * h;
-			gEngfuncs.pTriAPI->TexCoord2f( tu[v], tv[v] );
-			gEngfuncs.pTriAPI->Vertex3fv( p );
+			if( !hspr[k] )
+				continue;
+			int w = SPR_Width( hspr[k], 0 ), h = SPR_Height( hspr[k], 0 );
+			SPR_Set( hspr[k], (int)( 255 * al ), (int)( 217 * al ), (int)( 235 * al ));
+			SPR_DrawAdditive( 0, (int)cx - w / 2, (int)cy - h / 2, nullptr );
 		}
-		gEngfuncs.pTriAPI->End();
+		else
+		{
+			if( !mspr[k] )
+				continue;
+			float half = cv[k][4]->value * g_czTorchSize * ( ScreenHeight / 480.0f );
+			gEngfuncs.pTriAPI->SpriteTexture( mspr[k], 0 );
+			gEngfuncs.pTriAPI->RenderMode( kRenderTransAdd );
+			gEngfuncs.pTriAPI->CullFace( TRI_NONE );
+			gEngfuncs.pTriAPI->Color4f( 1.0f, 0.85f, 0.92f, al );
+			DrawUtils::Draw2DQuad( cx - half, cy - half, cx + half, cy + half );
+			gEngfuncs.pTriAPI->RenderMode( kRenderNormal );
+		}
 	}
-	gEngfuncs.pTriAPI->RenderMode( kRenderNormal );
 }
