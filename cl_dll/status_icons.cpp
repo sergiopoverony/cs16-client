@@ -24,6 +24,7 @@
 #include "const.h"
 #include "entity_state.h"
 #include "cl_entity.h"
+#include "entity_types.h"
 #include <string.h>
 #include <math.h>
 #include <stdio.h>
