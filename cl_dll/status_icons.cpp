@@ -31,6 +31,8 @@
 #include "parsemsg.h"
 #include "event_api.h"
 #include "com_weapons.h"
+#include "pm_defs.h"
+#include "pmtrace.h"
 
 int CHudStatusIcons::Init( void )
 {
@@ -268,7 +270,8 @@ int CHudStatusIcons::MsgFunc_HudIcons( const char *pszName, int iSize, void *pbu
 
 	for( size_t k = 0; k < sizeof( icons ) / sizeof( icons[0] ); k++ )
 	{
-		if( shown & icons[k].bit )
+		// bomb room: only the defuse kit icon, the radio icon goes away
+		if( ( shown & icons[k].bit ) && !( icons[k].bit == 16 && ( shown & 512 )))
 		{
 			// tools: green while the player is inside their zone, red otherwise
 			if( ( ( active & icons[k].bit ) && ( owned & icons[k].bit ) ) || icons[k].bit == 1 || icons[k].bit == 512 || icons[k].bit == 1024 )
@@ -447,6 +450,31 @@ static void CZ_TorchDraw( int pass )
 			e->curstate.frame = 0;
 			int w = SPR_Width( hspr[k], 0 );
 			float half = cv[k][4]->value * 0.1f * g_czTorchSize; // units
+			// keep the sprite in front of world geometry (doors, tables): pull it towards the eye, keep apparent size
+			{
+				extern vec3_t v_origin;
+				vec3_t d; VectorSubtract( c, v_origin, d );
+				float dist = VectorLength( d );
+				if( dist > 1.0f )
+				{
+					pmtrace_t tr;
+					gEngfuncs.pEventAPI->EV_SetUpPlayerPrediction( false, true );
+					gEngfuncs.pEventAPI->EV_PushPMStates();
+					gEngfuncs.pEventAPI->EV_SetSolidPlayers( -1 );
+					gEngfuncs.pEventAPI->EV_SetTraceHull( 2 );
+					gEngfuncs.pEventAPI->EV_PlayerTrace( v_origin, c, PM_WORLD_ONLY, -1, &tr );
+					gEngfuncs.pEventAPI->EV_PopPMStates();
+					if( tr.fraction < 1.0f )
+					{
+						float nf = tr.fraction * dist - 2.0f;
+						if( nf < 4.0f ) nf = 4.0f;
+						float ratio = nf / dist;
+						for( int i = 0; i < 3; i++ )
+							e->origin[i] = e->curstate.origin[i] = v_origin[i] + d[i] * ratio;
+						half *= ratio;
+					}
+				}
+			}
 			e->curstate.scale = ( w > 0 ) ? ( half * 2.0f / (float)w ) : 1.0f;
 			gEngfuncs.CL_CreateVisibleEntity( ET_NORMAL, e );
 		}

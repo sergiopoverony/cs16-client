@@ -72,9 +72,12 @@ int CHudNVG::Draw(float flTime)
 			wrect_t rc = gHUD.GetSpriteRect( idx );
 			if( spr )
 			{
-				if( m_bOn ) SPR_Set( spr, 50, 250, 50 );
-				else SPR_Set( spr, 250, 50, 50 );
-				SPR_DrawAdditive( 0, ScreenWidth - ( rc.right - rc.left ) - ScreenWidth / 64, ScreenHeight / 48, &rc );
+				// green: steady while on, blinking while owned but off
+				if( m_bOn || !( (int)( flTime * 3.0f ) & 1 ))
+				{
+					SPR_Set( spr, 50, 250, 50 );
+					SPR_DrawAdditive( 0, ScreenWidth - ( rc.right - rc.left ) - ScreenWidth / 64, ScreenHeight / 48, &rc );
+				}
 			}
 		}
 	}
