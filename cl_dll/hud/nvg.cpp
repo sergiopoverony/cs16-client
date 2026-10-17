@@ -152,6 +152,7 @@ int CHudNVG::MsgFunc_NVGToggle(const char *pszName, int iSize, void *pbuf)
 
 	// 0 off, 1 on, 2 owned (off), 3 not owned
 	int v = reader.ReadByte();
+	gEngfuncs.Con_DPrintf( "NVGToggle: %d\n", v );
 	if( v == 1 ) { m_bOn = true; m_bOwned = true; }
 	else if( v == 2 ) { m_bOn = false; m_bOwned = true; }
 	else if( v == 3 ) { m_bOn = false; m_bOwned = false; }

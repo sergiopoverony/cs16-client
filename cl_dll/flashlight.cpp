@@ -96,6 +96,13 @@ int CHudFlashlight::Draw(float flTime)
 	if (g_iUser1 == OBS_IN_EYE)
 		return 1;
 
+	// CZ training: the flashlight belongs to the shotgun, the icon appears once it is picked up
+	{
+		const char *lvl = gEngfuncs.pfnGetLevelName();
+		if (lvl && strstr(lvl, "cz_") && !(gHUD.m_iWeaponBits & (1 << WEAPON_M3)))
+			return 1;
+	}
+
 	if (m_fOn)
 		a = 225;
 	else
