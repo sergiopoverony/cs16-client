@@ -102,7 +102,7 @@ static void CZ_DrawSprite( const char *name, int x, int y, int r, int g, int b )
 
 static void CZ_DrawTools( float flTime )
 {
-	static const char *toolIcons[] = { "", "icon_camera", "icon_fibercamera", "icon_blowtorch", "icon_radiocontrolledbomb" };
+	static const char *toolIcons[] = { "", "icon_camera", "icon_fibercamera", "icon_blowtorch", "icon_radiocontrolledbomb", "icon_radio" };
 
 	// fiber optic camera: round red-tinted view with scan lines
 	if( g_czFiber )
@@ -138,6 +138,7 @@ static void CZ_DrawTools( float flTime )
 		{
 			{ 4,   1, "You are in a camera zone" },
 			{ 8,   2, "You are in a fiber optic camera zone" },
+			{ 16,  5, "You are in a radio zone" },
 			{ 32,  4, "You are in a radio controlled bomb zone" },
 			{ 64,  3, "You are in a blowtorch zone" },
 			{ 512, 0, "You are in a bomb defuse zone" },
@@ -155,33 +156,64 @@ static void CZ_DrawTools( float flTime )
 
 	// blowtorch flame: a small pink-white spot with a soft halo, projected onto the screen so the view model cannot hide it
 	{
-		extern vec3_t g_czTorchPos;
+		extern vec3_t g_czTorchPos, v_angles;
 		extern bool g_czTorchOn, g_czTorchAtk;
 		extern float g_czTorchSize;
-		static model_t *flameSpr = nullptr;
+		// two flame sprites (like env_glow), each with its own sprite name, offset (fwd/right/up in units, relative to the nozzle),
+		// size and brightness: cz_torch1_* and cz_torch2_*; the sprite name can be changed live (sprites/flare3.spr, glow01.spr, glow03.spr, fire.spr ...)
+		static cvar_t *cv[2][6];
+		static model_t *spr[2] = { nullptr, nullptr };
+		static char sprName[2][64] = { "", "" };
+		if( !cv[0][0] )
+		{
+			static const char *defName[2] = { "sprites/flare3.spr", "sprites/glow01.spr" };
+			static const char *defSize[2] = { "6", "20" };
+			static const char *defAlpha[2] = { "1.0", "0.4" };
+			for( int k = 0; k < 2; k++ )
+			{
+				char n[64];
+				snprintf( n, sizeof n, "cz_torch%d_spr", k + 1 );   cv[k][0] = gEngfuncs.pfnRegisterVariable( n, defName[k], 0 );
+				snprintf( n, sizeof n, "cz_torch%d_fwd", k + 1 );   cv[k][1] = gEngfuncs.pfnRegisterVariable( n, "0", 0 );
+				snprintf( n, sizeof n, "cz_torch%d_right", k + 1 ); cv[k][2] = gEngfuncs.pfnRegisterVariable( n, "0", 0 );
+				snprintf( n, sizeof n, "cz_torch%d_up", k + 1 );    cv[k][3] = gEngfuncs.pfnRegisterVariable( n, "0", 0 );
+				snprintf( n, sizeof n, "cz_torch%d_size", k + 1 );  cv[k][4] = gEngfuncs.pfnRegisterVariable( n, defSize[k], 0 );
+				snprintf( n, sizeof n, "cz_torch%d_alpha", k + 1 ); cv[k][5] = gEngfuncs.pfnRegisterVariable( n, defAlpha[k], 0 );
+			}
+		}
 		if( g_czTorchOn && g_czTool == 3 && !g_czFiber )
 		{
-			if( !flameSpr )
-				flameSpr = gEngfuncs.LoadMapSprite( "sprites/glow01.spr" );
-			vec3_t scr;
-			if( flameSpr && !gEngfuncs.pTriAPI->WorldToScreen( g_czTorchPos, scr ) )
+			vec3_t fw, rt, up;
+			gEngfuncs.pfnAngleVectors( v_angles, fw, rt, up );
+			gEngfuncs.pTriAPI->RenderMode( kRenderTransAdd );
+			gEngfuncs.pTriAPI->CullFace( TRI_NONE );
+			for( int k = 0; k < 2; k++ )
 			{
+				const char *nm = cv[k][0]->string;
+				if( !spr[k] || strcmp( nm, sprName[k] ) )
+				{
+					snprintf( sprName[k], sizeof sprName[k], "%s", nm );
+					spr[k] = gEngfuncs.LoadMapSprite( sprName[k] );
+				}
+				if( !spr[k] )
+					continue;
+				vec3_t w, scr;
+				for( int i = 0; i < 3; i++ )
+					w[i] = g_czTorchPos[i] + fw[i] * cv[k][1]->value + rt[i] * cv[k][2]->value + up[i] * cv[k][3]->value;
+				if( gEngfuncs.pTriAPI->WorldToScreen( w, scr ) )
+					continue;
 				float cx = ( 1.0f + scr[0] ) * 0.5f * ScreenWidth;
 				float cy = ( 1.0f - scr[1] ) * 0.5f * ScreenHeight;
-				float u = ScreenHeight / 480.0f;
-				gEngfuncs.pTriAPI->SpriteTexture( flameSpr, 0 );
-				gEngfuncs.pTriAPI->RenderMode( kRenderTransAdd );
-				gEngfuncs.pTriAPI->CullFace( TRI_NONE );
-				float halo = 26.0f * u * g_czTorchSize, core = 7.0f * u * g_czTorchSize;
-				gEngfuncs.pTriAPI->Color4f( 0.92f, 0.55f, 0.75f, g_czTorchAtk ? 0.55f : 0.40f );
-				DrawUtils::Draw2DQuad( cx - halo, cy - halo, cx + halo, cy + halo );
-				gEngfuncs.pTriAPI->Color4f( 1.0f, 0.85f, 0.92f, 1.0f );
-				DrawUtils::Draw2DQuad( cx - core, cy - core, cx + core, cy + core );
+				float h = cv[k][4]->value * ( ScreenHeight / 480.0f ) * g_czTorchSize;
+				float al = cv[k][5]->value * ( g_czTorchAtk ? 1.3f : 1.0f );
+				if( al > 1.0f ) al = 1.0f;
+				gEngfuncs.pTriAPI->SpriteTexture( spr[k], 0 );
+				gEngfuncs.pTriAPI->Color4f( 1.0f, 0.85f, 0.92f, al );
+				DrawUtils::Draw2DQuad( cx - h, cy - h, cx + h, cy + h );
 			}
 		}
 	}
 
-	if( g_czTool < 1 || g_czTool > 4 )
+	if( g_czTool < 1 || g_czTool > 5 )
 		return;
 
 	// "EQUIPMENT" plate on the right for a few seconds after a tool was taken
@@ -282,6 +314,7 @@ int CHudStatusIcons::MsgFunc_HudIcons( const char *pszName, int iSize, void *pbu
 		{ 1,    "icon_stealth" },
 		{ 4,    "icon_camera" },
 		{ 8,    "icon_fibercamera" },
+		{ 16,   "icon_radio" },
 		{ 32,   "icon_radiocontrolledbomb" },
 		{ 64,   "icon_blowtorch" },
 		{ 512,  "icon_bombdefuse" },

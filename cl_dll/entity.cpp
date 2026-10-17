@@ -244,9 +244,9 @@ static void CZ_TorchFlame( void )
 		return;
 	if( !fwd )
 	{
-		fwd   = gEngfuncs.pfnRegisterVariable( "cz_torch_fwd",   "24", 0 );
+		fwd   = gEngfuncs.pfnRegisterVariable( "cz_torch_fwd",   "33", 0 );
 		right = gEngfuncs.pfnRegisterVariable( "cz_torch_right", "11", 0 );
-		up    = gEngfuncs.pfnRegisterVariable( "cz_torch_up",    "5",  0 );
+		up    = gEngfuncs.pfnRegisterVariable( "cz_torch_up",    "-10",  0 );
 		att   = gEngfuncs.pfnRegisterVariable( "cz_torch_att",   "0",  0 );
 		size  = gEngfuncs.pfnRegisterVariable( "cz_torch_size",  "1",  0 );
 	}
