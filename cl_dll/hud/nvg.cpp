@@ -61,6 +61,26 @@ int CHudNVG::Draw(float flTime)
 
 	gEngfuncs.pfnFillRGBABlend(0, 0, ScreenWidth, ScreenHeight, 50, 225, 50, m_iAlpha);
 
+	// horizontal scan lines like the original, and the night vision icon in the top right corner
+	{
+		int step = ScreenHeight / 190;
+		if( step < 3 ) step = 3;
+		for( int y = 0; y < ScreenHeight; y += step )
+			gEngfuncs.pfnFillRGBABlend( 0, y, ScreenWidth, 1 + step / 4, 0, 30, 0, 70 );
+
+		int idx = gHUD.GetSpriteIndex( "icon_nightvision" );
+		if( idx >= 0 )
+		{
+			HSPRITE spr = gHUD.GetSprite( idx );
+			wrect_t rc = gHUD.GetSpriteRect( idx );
+			if( spr )
+			{
+				SPR_Set( spr, 50, 250, 50 );
+				SPR_DrawAdditive( 0, ScreenWidth - ( rc.right - rc.left ) - ScreenWidth / 64, ScreenHeight / 48, &rc );
+			}
+		}
+	}
+
 	// draw a dynamic light on player's origin
 	if( cl_fancy_nvg->value )
 	{
