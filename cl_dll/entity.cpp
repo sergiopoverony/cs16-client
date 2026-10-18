@@ -268,7 +268,7 @@ static void CZ_TorchFlame( void )
 	vec3_t baseOrg, baseAng;
 	VectorCopy( v_origin, baseOrg );
 	VectorCopy( v_angles, baseAng );
-	if( att && att->value > 0.0f && att->value < 1.5f && vmE && ( vmE->origin[0] != 0.0f || vmE->origin[1] != 0.0f || vmE->origin[2] != 0.0f ))
+	if( false && att && vmE && ( vmE->origin[0] != 0.0f || vmE->origin[1] != 0.0f || vmE->origin[2] != 0.0f ))
 	{
 		VectorCopy( vmE->origin, baseOrg );
 		VectorCopy( vmE->angles, baseAng );

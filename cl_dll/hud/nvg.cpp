@@ -76,7 +76,7 @@ int CHudNVG::Draw(float flTime)
 				if( m_bOn || !( (int)( flTime * 3.0f ) & 1 ))
 				{
 					SPR_Set( spr, 50, 250, 50 );
-					SPR_DrawAdditive( 0, ScreenWidth - ( rc.right - rc.left ) - ScreenWidth / 64, ScreenHeight / 48, &rc );
+					SPR_DrawAdditive( 0, ScreenWidth - ( rc.right - rc.left ) - ScreenWidth / 64, ScreenHeight / 48 + ( rc.bottom - rc.top ) + ScreenHeight / 48, &rc );
 				}
 			}
 		}
