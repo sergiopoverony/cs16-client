@@ -263,9 +263,19 @@ static void CZ_TorchFlame( void )
 	static vec3_t prevOrg, prevAng;
 	bool &prevOk = g_czTorchPrevOk;
 	bool have = false;
+	cl_entity_t *vmE = gEngfuncs.GetViewModel();
+	// cz_torch_att 1: the base is the current view model origin/angles (includes bob and sway); 2: the plain view
+	vec3_t baseOrg, baseAng;
+	VectorCopy( v_origin, baseOrg );
+	VectorCopy( v_angles, baseAng );
+	if( att && att->value > 0.0f && att->value < 1.5f && vmE && ( vmE->origin[0] != 0.0f || vmE->origin[1] != 0.0f || vmE->origin[2] != 0.0f ))
+	{
+		VectorCopy( vmE->origin, baseOrg );
+		VectorCopy( vmE->angles, baseAng );
+	}
 	if( att && att->value > 0.0f && prevOk )
 	{
-		cl_entity_t *vm = gEngfuncs.GetViewModel();
+		cl_entity_t *vm = vmE;
 		if( vm )
 		{
 			vec3_t pf, pr, pu, rel;
@@ -279,8 +289,10 @@ static void CZ_TorchFlame( void )
 			if( d2 > 4.0f && d2 < 60.0f * 60.0f )
 			{
 				float a = DotProduct( rel, pf ), b = DotProduct( rel, pr ), c = DotProduct( rel, pu );
+				vec3_t bf, br, bu;
+				gEngfuncs.pfnAngleVectors( baseAng, bf, br, bu );
 				for( int i = 0; i < 3; i++ )
-					pos[i] = v_origin[i] + f[i] * a + r[i] * b + u[i] * c;
+					pos[i] = baseOrg[i] + bf[i] * a + br[i] * b + bu[i] * c;
 				// fine tuning offsets, in the current view axes
 				for( int i = 0; i < 3; i++ )
 					pos[i] += f[i] * fwd->value + r[i] * right->value + u[i] * up->value;
@@ -288,8 +300,8 @@ static void CZ_TorchFlame( void )
 			}
 		}
 	}
-	VectorCopy( v_origin, prevOrg );
-	VectorCopy( v_angles, prevAng );
+	VectorCopy( baseOrg, prevOrg );
+	VectorCopy( baseAng, prevAng );
 	prevOk = true;
 	if( !have )
 	{

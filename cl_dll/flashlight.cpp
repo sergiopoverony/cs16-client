@@ -95,8 +95,13 @@ int CHudFlashlight::Draw(float flTime)
 	int r, g, b, x, y, a;
 	wrect_t rc;
 
-	if (!(gHUD.m_iWeaponBits & (1<<(WEAPON_SUIT)) ))
-		return 1;
+	{
+		// CZ training: the shotgun alone is enough, the suit bit may not be set yet
+		const char *lvl0 = gEngfuncs.pfnGetLevelName();
+		bool czM3 = lvl0 && strstr(lvl0, "cz_") && (gHUD.m_iWeaponBits & (1 << WEAPON_M3));
+		if (!czM3 && !(gHUD.m_iWeaponBits & (1<<(WEAPON_SUIT)) ))
+			return 1;
+	}
 
 	if (g_iUser1 == OBS_IN_EYE)
 		return 1;

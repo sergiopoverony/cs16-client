@@ -368,6 +368,7 @@ extern float g_czTorchSize;
 static void CZ_TorchDraw( int pass )
 {
 	static cvar_t *cv[2][6];
+	static cvar_t *cvCol[2] = { nullptr, nullptr };
 	static cvar_t *cvMode = nullptr;
 	static HSPRITE hspr[2] = { 0, 0 };
 	static model_t *mspr[2] = { nullptr, nullptr };
@@ -375,9 +376,10 @@ static void CZ_TorchDraw( int pass )
 	if( !cv[0][0] )
 	{
 		static const char *defName[2] = { "sprites/flare3.spr", "sprites/flare3.spr" };
-		static const char *defSize[2] = { "5", "35" };
+		static const char *defSize[2] = { "5.5", "35" };
 		static const char *defAlpha[2] = { "1.0", "0.2" };
 		static const char *defFwd[2] = { "-1", "-2" };
+		static const char *defCol[2] = { "205 220 255", "255 217 235" };
 		cvMode = gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) ? gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) : gEngfuncs.pfnRegisterVariable( "cz_torch_mode", "3", 0 );
 		for( int k = 0; k < 2; k++ )
 		{
@@ -385,7 +387,8 @@ static void CZ_TorchDraw( int pass )
 			snprintf( n, sizeof n, "cz_torch%d_spr", k + 1 );   cv[k][0] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defName[k], 0 );
 			snprintf( n, sizeof n, "cz_torch%d_fwd", k + 1 );   cv[k][1] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defFwd[k], 0 );
 			snprintf( n, sizeof n, "cz_torch%d_right", k + 1 ); cv[k][2] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, "0", 0 );
-			snprintf( n, sizeof n, "cz_torch%d_up", k + 1 );    cv[k][3] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, k ? "0" : "0.15", 0 );
+			snprintf( n, sizeof n, "cz_torch%d_up", k + 1 );    cv[k][3] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, k ? "0" : "-0.16", 0 );
+			snprintf( n, sizeof n, "cz_torch%d_color", k + 1 ); cvCol[k] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defCol[k], 0 );
 			snprintf( n, sizeof n, "cz_torch%d_size", k + 1 );  cv[k][4] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defSize[k], 0 );
 			snprintf( n, sizeof n, "cz_torch%d_alpha", k + 1 ); cv[k][5] = gEngfuncs.pfnGetCvarPointer( n ) ? gEngfuncs.pfnGetCvarPointer( n ) : gEngfuncs.pfnRegisterVariable( n, defAlpha[k], 0 );
 		}
@@ -445,9 +448,13 @@ static void CZ_TorchDraw( int pass )
 			VectorCopy( c, e->curstate.origin );
 			e->curstate.rendermode = kRenderTransAdd;
 			e->curstate.renderamt = (int)( 255 * al );
-			e->curstate.rendercolor.r = 255;
-			e->curstate.rendercolor.g = 217;
-			e->curstate.rendercolor.b = 235;
+			{
+				int cr = 255, cg = 217, cb = 235;
+				sscanf( cvCol[k]->string, "%d %d %d", &cr, &cg, &cb );
+				e->curstate.rendercolor.r = (byte)bound( 0, cr, 255 );
+				e->curstate.rendercolor.g = (byte)bound( 0, cg, 255 );
+				e->curstate.rendercolor.b = (byte)bound( 0, cb, 255 );
+			}
 			e->curstate.renderfx = 0;
 			e->curstate.frame = 0;
 			int w = SPR_Width( hspr[k], 0 );
@@ -464,12 +471,12 @@ static void CZ_TorchDraw( int pass )
 					gEngfuncs.pEventAPI->EV_PushPMStates();
 					gEngfuncs.pEventAPI->EV_SetSolidPlayers( -1 );
 					gEngfuncs.pEventAPI->EV_SetTraceHull( 2 );
-					gEngfuncs.pEventAPI->EV_PlayerTrace( v_origin, c, PM_WORLD_ONLY, -1, &tr );
+					gEngfuncs.pEventAPI->EV_PlayerTrace( v_origin, c, PM_NORMAL, -1, &tr );
 					gEngfuncs.pEventAPI->EV_PopPMStates();
 					if( tr.fraction < 1.0f )
 					{
 						float nf = tr.fraction * dist - 2.0f;
-						if( nf < 4.0f ) nf = 4.0f;
+						if( nf < 1.5f ) nf = 1.5f;
 						float ratio = nf / dist;
 						for( int i = 0; i < 3; i++ )
 							e->origin[i] = e->curstate.origin[i] = v_origin[i] + d[i] * ratio;
@@ -478,6 +485,12 @@ static void CZ_TorchDraw( int pass )
 				}
 			}
 			e->curstate.scale = ( w > 0 ) ? ( half * 2.0f / (float)w ) : 1.0f;
+			// rigid to the view: no interpolation
+			e->curstate.effects |= EF_NOINTERP;
+			VectorCopy( e->origin, e->prevstate.origin );
+			VectorCopy( e->origin, e->latched.prevorigin );
+			e->curstate.msg_time = e->prevstate.msg_time = gEngfuncs.GetClientTime();
+			e->curstate.animtime = 0;
 			gEngfuncs.CL_CreateVisibleEntity( ET_NORMAL, e );
 		}
 		else if( !worldPass )
