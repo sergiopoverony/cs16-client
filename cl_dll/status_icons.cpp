@@ -274,7 +274,9 @@ int CHudStatusIcons::MsgFunc_HudIcons( const char *pszName, int iSize, void *pbu
 		if( ( shown & icons[k].bit ) && !( icons[k].bit == 16 && ( shown & 512 )))
 		{
 			// tools: green while the player is inside their zone, red otherwise
-			if( ( ( active & icons[k].bit ) && ( owned & icons[k].bit ) ) || icons[k].bit == 1 || icons[k].bit == 512 || icons[k].bit == 1024 )
+			if( icons[k].bit == 1 )
+				EnableIcon( icons[k].name, 160, 160, 160 ); // stealth: colourless grey
+			else if( ( ( active & icons[k].bit ) && ( owned & icons[k].bit ) ) || icons[k].bit == 512 || icons[k].bit == 1024 )
 				EnableIcon( icons[k].name, 50, 250, 50 );
 			else
 				EnableIcon( icons[k].name, 250, 60, 60 );

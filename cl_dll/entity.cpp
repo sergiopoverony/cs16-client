@@ -237,12 +237,16 @@ bool g_czTorchAtk = false;
 // blowtorch flame: a small pink-white flame at the nozzle plus a soft light on the walls.
 // The position is computed from the view (cz_torch_fwd/right/up, tweakable live); the view model attachment is optional (cz_torch_att 1)
 void CZ_TorchEntities( void );
+static bool g_czTorchPrevOk = false;
 static void CZ_TorchFlame( void )
 {
 	static cvar_t *fwd, *right, *up, *att, *size;
 	g_czTorchOn = false;
 	if( g_czTool != 3 || g_czFiber || !gEngfuncs.GetLocalPlayer() || gEngfuncs.IsSpectateOnly() )
+	{
+		g_czTorchPrevOk = false;
 		return;
+	}
 	if( !fwd )
 	{
 		fwd   = gEngfuncs.pfnRegisterVariable( "cz_torch_fwd",   "20", 0 );
@@ -254,22 +258,39 @@ static void CZ_TorchFlame( void )
 	vec3_t f, r, u, pos;
 	gEngfuncs.pfnAngleVectors( v_angles, f, r, u );
 
+	// The view model attachment was written while the PREVIOUS frame was drawn (HUD_CreateEntities runs before the view model is drawn),
+	// so it belongs to the previous view. Convert it into the previous view's axes and rebuild it with the current ones: no lag.
+	static vec3_t prevOrg, prevAng;
+	bool &prevOk = g_czTorchPrevOk;
 	bool have = false;
-	if( att && att->value > 0.0f )
+	if( att && att->value > 0.0f && prevOk )
 	{
 		cl_entity_t *vm = gEngfuncs.GetViewModel();
 		if( vm )
 		{
+			vec3_t pf, pr, pu, rel;
+			gEngfuncs.pfnAngleVectors( prevAng, pf, pr, pu );
 			float d2 = 0;
 			for( int i = 0; i < 3; i++ )
 			{
-				pos[i] = vm->attachment[0][i];
-				float d = pos[i] - v_origin[i];
-				d2 += d * d;
+				rel[i] = vm->attachment[0][i] - prevOrg[i];
+				d2 += rel[i] * rel[i];
 			}
-			have = ( d2 > 4.0f && d2 < 60.0f * 60.0f );
+			if( d2 > 4.0f && d2 < 60.0f * 60.0f )
+			{
+				float a = DotProduct( rel, pf ), b = DotProduct( rel, pr ), c = DotProduct( rel, pu );
+				for( int i = 0; i < 3; i++ )
+					pos[i] = v_origin[i] + f[i] * a + r[i] * b + u[i] * c;
+				// fine tuning offsets, in the current view axes
+				for( int i = 0; i < 3; i++ )
+					pos[i] += f[i] * fwd->value + r[i] * right->value + u[i] * up->value;
+				have = true;
+			}
 		}
 	}
+	VectorCopy( v_origin, prevOrg );
+	VectorCopy( v_angles, prevAng );
+	prevOk = true;
 	if( !have )
 	{
 		float a = fwd->value, b = right->value, c = up->value;

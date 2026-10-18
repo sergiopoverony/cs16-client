@@ -35,6 +35,8 @@ int CHudFlashlight::Init(void)
 {
 	m_fFade = 0;
 	m_fOn = 0;
+	m_flBat = 1.0f; // FlashBat is only sent once the light has been used
+	m_iBat = 100;
 
 	HOOK_MESSAGE(gHUD.m_Flash, Flashlight);
 	HOOK_MESSAGE(gHUD.m_Flash, FlashBat);
@@ -50,6 +52,8 @@ void CHudFlashlight::Reset(void)
 {
 	m_fFade = 0;
 	m_fOn = 0;
+	m_flBat = 1.0f;
+	m_iBat = 100;
 }
 
 int CHudFlashlight::VidInit(void)
