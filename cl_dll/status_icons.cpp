@@ -521,10 +521,8 @@ static void CZ_TorchDraw( int pass )
 			if( k == 0 && hspr[0] )
 			{
 				vec3_t tip;
-				if( g_czTorchAttOk )
-					VectorCopy( g_czTorchAtt, tip );
-				else
-					VectorCopy( c, tip );
+				const float *src = g_czTorchAttOk ? (const float *)g_czTorchAtt : (const float *)c;
+				tip[0] = src[0]; tip[1] = src[1]; tip[2] = src[2];
 				CZ_TorchParticles( hspr[0], cv[0][4]->value, al, cvCol[0]->string, tip, fw );
 			}
 			continue;
