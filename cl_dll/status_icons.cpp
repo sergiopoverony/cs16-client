@@ -165,12 +165,12 @@ static void CZ_DrawTools( float flTime )
 	{
 		// bottom right, above the ammo area, like the original
 		int w = ScreenWidth * 14 / 100, h = ScreenHeight * 7 / 100;
-		int x = ScreenWidth - w - 4, y = ScreenHeight * 845 / 1000 - ( g_czTool == 4 ? 70 : 0 );
+		int x = ScreenWidth - w, y = ScreenHeight * 845 / 1000 - ( g_czTool == 4 ? 70 : 0 );
 		FillRGBABlend( x, y, w, h, 50, 250, 50, 40 );
 		DrawUtils::DrawHudString( x + 6, y + h - 16, ScreenWidth, "EQUIPMENT", 50, 250, 50 );
-		CZ_DrawSprite( toolIcons[g_czTool], x + w - 40, y + 2, 50, 250, 50 );
+		CZ_DrawSprite( toolIcons[g_czTool], x + w - 40 - ScreenWidth / 80, y + 2, 50, 250, 50 );
 		if( g_czTool == 4 )
-			DrawUtils::DrawHudNumberString( x + w - 8, y + h - 24, 0, g_czCount, 50, 250, 50 );
+			DrawUtils::DrawHudNumberString( x + w - 8 - ScreenWidth / 80, y + h - 24, 0, g_czCount, 50, 250, 50 );
 	}
 
 	// mines: icon and counter in the bottom right corner
