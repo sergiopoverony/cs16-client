@@ -163,11 +163,12 @@ static void CZ_DrawTools( float flTime )
 	// "EQUIPMENT" plate on the right for a few seconds after a tool was taken
 	if( flTime < g_czPlateT )
 	{
-		int w = 110, h = 96;
-		int x = ScreenWidth - w - 10, y = ScreenHeight / 2 - h / 2;
-		FillRGBABlend( x, y, w, h, 0, 0, 0, 90 );
-		DrawUtils::DrawHudString( x + 12, y + 4, ScreenWidth, "EQUIPMENT", 50, 250, 50 );
-		CZ_DrawSprite( toolIcons[g_czTool], x + 4, y + 22, 50, 250, 50 );
+		// bottom right, above the ammo area, like the original
+		int w = ScreenWidth * 14 / 100, h = ScreenHeight * 7 / 100;
+		int x = ScreenWidth - w - 4, y = ScreenHeight * 845 / 1000 - ( g_czTool == 4 ? 70 : 0 );
+		FillRGBABlend( x, y, w, h, 50, 250, 50, 40 );
+		DrawUtils::DrawHudString( x + 6, y + h - 16, ScreenWidth, "EQUIPMENT", 50, 250, 50 );
+		CZ_DrawSprite( toolIcons[g_czTool], x + w - 40, y + 2, 50, 250, 50 );
 		if( g_czTool == 4 )
 			DrawUtils::DrawHudNumberString( x + w - 8, y + h - 24, 0, g_czCount, 50, 250, 50 );
 	}
@@ -365,6 +366,83 @@ extern float g_czTorchSize;
 // Blowtorch flame: two sprites (core + halo) projected onto the screen and drawn in the 2D pass,
 // so the view model cannot hide them with its depth.
 // cz_torch_mode 0 = native-size HUD sprite draw (SPR_DrawAdditive), 1 = scaled 2D quad (cz_torchN_size)
+// flame particles: sprites are spawned all the time at the nozzle, fly forward, shrink and fade; a pressed trigger makes them faster and longer
+struct czPart_t { vec3_t org, vel; float born, life; bool on; };
+static void CZ_TorchParticles( HSPRITE spr, float baseSize, float al, const char *colStr, const vec3_t tip, const vec3_t fw )
+{
+	static cvar_t *cvSpd = nullptr, *cvLife, *cvRate, *cvSz;
+	static czPart_t parts[48];
+	static float lastT = 0, acc = 0;
+	if( !cvSpd )
+	{
+		cvSpd  = gEngfuncs.pfnRegisterVariable( "cz_torch_pspeed", "40", 0 );
+		cvLife = gEngfuncs.pfnRegisterVariable( "cz_torch_plife",  "0.12", 0 );
+		cvRate = gEngfuncs.pfnRegisterVariable( "cz_torch_prate",  "120", 0 );
+		cvSz   = gEngfuncs.pfnRegisterVariable( "cz_torch_psize",  "1.2", 0 );
+	}
+	extern bool g_czTorchAtk;
+	const model_s *m = spr ? gEngfuncs.GetSpritePointer( spr ) : nullptr;
+	if( !m )
+		return;
+	float t = gEngfuncs.GetClientTime();
+	float dt = t - lastT;
+	if( dt < 0.0f || dt > 0.2f ) dt = 0.0f;
+	lastT = t;
+	float spd  = cvSpd->value * ( g_czTorchAtk ? 2.5f : 1.0f );
+	float life = cvLife->value * ( g_czTorchAtk ? 1.8f : 1.0f );
+	acc += dt * cvRate->value;
+	while( acc >= 1.0f )
+	{
+		acc -= 1.0f;
+		for( int i = 0; i < 48; i++ )
+		{
+			if( parts[i].on ) continue;
+			czPart_t &p = parts[i];
+			p.on = true;
+			p.born = t - gEngfuncs.pfnRandomFloat( 0.0f, dt );
+			p.life = life * gEngfuncs.pfnRandomFloat( 0.7f, 1.0f );
+			for( int j = 0; j < 3; j++ )
+			{
+				p.org[j] = tip[j];
+				p.vel[j] = fw[j] * spd * gEngfuncs.pfnRandomFloat( 0.8f, 1.2f ) + gEngfuncs.pfnRandomFloat( -4.0f, 4.0f );
+			}
+			break;
+		}
+	}
+	int cr = 255, cg = 217, cb = 235;
+	sscanf( colStr, "%d %d %d", &cr, &cg, &cb );
+	int w = SPR_Width( spr, 0 );
+	static cl_entity_t ents[48];
+	for( int i = 0; i < 48; i++ )
+	{
+		czPart_t &p = parts[i];
+		if( !p.on ) continue;
+		float age = t - p.born;
+		if( age >= p.life ) { p.on = false; continue; }
+		float f = age / p.life;
+		vec3_t pos;
+		for( int j = 0; j < 3; j++ )
+			pos[j] = p.org[j] + p.vel[j] * age;
+		cl_entity_t *e = &ents[i];
+		memset( e, 0, sizeof( *e ));
+		e->model = (model_s *)m;
+		VectorCopy( pos, e->origin );
+		VectorCopy( pos, e->curstate.origin );
+		e->curstate.rendermode = kRenderTransAdd;
+		e->curstate.renderamt = (int)( 255 * al * ( 1.0f - f ));
+		e->curstate.rendercolor.r = (byte)bound( 0, cr, 255 );
+		e->curstate.rendercolor.g = (byte)bound( 0, cg, 255 );
+		e->curstate.rendercolor.b = (byte)bound( 0, cb, 255 );
+		float half = baseSize * 0.1f * cvSz->value * ( 1.0f - f );
+		e->curstate.scale = ( w > 0 ) ? ( half * 2.0f / (float)w ) : 1.0f;
+		e->curstate.effects |= EF_NOINTERP;
+		VectorCopy( pos, e->prevstate.origin );
+		VectorCopy( pos, e->latched.prevorigin );
+		e->curstate.msg_time = e->prevstate.msg_time = t;
+		gEngfuncs.CL_CreateVisibleEntity( ET_NORMAL, e );
+	}
+}
+
 static void CZ_TorchDraw( int pass )
 {
 	static cvar_t *cv[2][6];
@@ -469,14 +547,14 @@ static void CZ_TorchDraw( int pass )
 					pmtrace_t tr;
 					gEngfuncs.pEventAPI->EV_SetUpPlayerPrediction( false, true );
 					gEngfuncs.pEventAPI->EV_PushPMStates();
-					gEngfuncs.pEventAPI->EV_SetSolidPlayers( -1 );
+					gEngfuncs.pEventAPI->EV_SetSolidPlayers( gEngfuncs.GetLocalPlayer()->index - 1 );
 					gEngfuncs.pEventAPI->EV_SetTraceHull( 2 );
 					gEngfuncs.pEventAPI->EV_PlayerTrace( v_origin, c, PM_NORMAL, -1, &tr );
 					gEngfuncs.pEventAPI->EV_PopPMStates();
 					if( tr.fraction < 1.0f )
 					{
 						float nf = tr.fraction * dist - 2.0f;
-						if( nf < 1.5f ) nf = 1.5f;
+						if( nf < 4.0f ) nf = 4.0f;
 						float ratio = nf / dist;
 						for( int i = 0; i < 3; i++ )
 							e->origin[i] = e->curstate.origin[i] = v_origin[i] + d[i] * ratio;
@@ -492,6 +570,8 @@ static void CZ_TorchDraw( int pass )
 			e->curstate.msg_time = e->prevstate.msg_time = gEngfuncs.GetClientTime();
 			e->curstate.animtime = 0;
 			gEngfuncs.CL_CreateVisibleEntity( ET_NORMAL, e );
+			if( k == 0 )
+				CZ_TorchParticles( hspr[0], cv[0][4]->value, al, cvCol[0]->string, c, fw );
 		}
 		else if( !worldPass )
 		{

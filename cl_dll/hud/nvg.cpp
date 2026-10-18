@@ -76,7 +76,10 @@ int CHudNVG::Draw(float flTime)
 				if( m_bOn || !( (int)( flTime * 3.0f ) & 1 ))
 				{
 					SPR_Set( spr, 50, 250, 50 );
-					SPR_DrawAdditive( 0, ScreenWidth - ( rc.right - rc.left ) - ScreenWidth / 64, ScreenHeight / 48 + ( rc.bottom - rc.top ) + ScreenHeight / 48, &rc );
+					// same vertical axis as the flashlight icon (its centre is at ScreenWidth - width), right below it
+					int fw = gHUD.m_Flash.GetIconWidth();
+					int iw = rc.right - rc.left;
+					SPR_DrawAdditive( 0, ScreenWidth - fw - iw / 2, ScreenHeight / 48 + ( rc.bottom - rc.top ) + ScreenHeight / 48, &rc );
 				}
 			}
 		}
