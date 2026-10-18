@@ -458,7 +458,7 @@ static void CZ_TorchDraw( int pass )
 		static const char *defAlpha[2] = { "1.0", "0.2" };
 		static const char *defFwd[2] = { "-1", "-2" };
 		static const char *defCol[2] = { "205 220 255", "255 217 235" };
-		cvMode = gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) ? gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) : gEngfuncs.pfnRegisterVariable( "cz_torch_mode", "3", 0 );
+		cvMode = gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) ? gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" ) : gEngfuncs.pfnRegisterVariable( "cz_torch_mode", "4", 0 );
 		for( int k = 0; k < 2; k++ )
 		{
 			char n[64];
@@ -513,6 +513,22 @@ static void CZ_TorchDraw( int pass )
 		if( al > 1.0f ) al = 1.0f;
 		if( al < 0.0f ) al = 0.0f;
 
+		if( pass == 2 && (int)( cvMode->value + 0.5f ) >= 4 )
+		{
+			// mode 4: the two flame sprites are drawn while the view model is drawn (CZ_TorchViewModelDraw); only the particles here
+			extern vec3_t g_czTorchAtt;
+			extern bool g_czTorchAttOk;
+			if( k == 0 && hspr[0] )
+			{
+				vec3_t tip;
+				if( g_czTorchAttOk )
+					VectorCopy( g_czTorchAtt, tip );
+				else
+					VectorCopy( c, tip );
+				CZ_TorchParticles( hspr[0], cv[0][4]->value, al, cvCol[0]->string, tip, fw );
+			}
+			continue;
+		}
 		if( pass == 2 )
 		{
 			static cl_entity_t ents[2];
@@ -629,4 +645,71 @@ void CZ_TorchEntities( void )
 void CZ_DrawTorchWorld( void )
 {
 	CZ_TorchDraw( 1 );
+}
+
+// Mode 4: called from the studio renderer right after the view model is drawn. att = view model attachment 0 of THIS frame,
+// so the flame is rigid to the nozzle (no lag), and it is drawn with the view model's depth range (hands cover it).
+vec3_t g_czTorchAtt;
+bool g_czTorchAttOk = false;
+void CZ_TorchViewModelDraw( const float *att )
+{
+	extern bool g_czTorchOn, g_czTorchAtk;
+	extern float g_czTorchSize;
+	g_czTorchAttOk = false;
+	cvar_t *cm = gEngfuncs.pfnGetCvarPointer( "cz_torch_mode" );
+	if( !cm || (int)( cm->value + 0.5f ) < 4 || !g_czTorchOn || g_czTool != 3 || g_czFiber )
+		return;
+	VectorCopy( att, g_czTorchAtt );
+	g_czTorchAttOk = true;
+	static HSPRITE hspr[2] = { 0, 0 };
+	static char nm[2][64] = { "", "" };
+	vec3_t fw, rt, up;
+	gEngfuncs.pfnAngleVectors( v_angles, fw, rt, up );
+	for( int k = 0; k < 2; k++ )
+	{
+		char n[64];
+		snprintf( n, sizeof n, "cz_torch%d_spr", k + 1 );
+		cvar_t *cs = gEngfuncs.pfnGetCvarPointer( n );
+		if( !cs ) return;
+		if( strcmp( cs->string, nm[k] ))
+		{
+			snprintf( nm[k], sizeof nm[k], "%s", cs->string );
+			hspr[k] = SPR_Load( nm[k] );
+		}
+		const model_s *m = hspr[k] ? gEngfuncs.GetSpritePointer( hspr[k] ) : nullptr;
+		if( !m ) continue;
+		auto cvf = [&]( const char *suffix, float def ) {
+			snprintf( n, sizeof n, "cz_torch%d_%s", k + 1, suffix );
+			cvar_t *c = gEngfuncs.pfnGetCvarPointer( n );
+			return c ? c->value : def;
+		};
+		float fo = cvf( "fwd", 0 ), ro = cvf( "right", 0 ), uo = cvf( "up", 0 );
+		float half = cvf( "size", 5 ) * 0.1f * g_czTorchSize;
+		float al = cvf( "alpha", 1 ) * ( g_czTorchAtk ? 1.3f : 1.0f );
+		if( al > 1.0f ) al = 1.0f;
+		int cr = 255, cg = 217, cb = 235;
+		snprintf( n, sizeof n, "cz_torch%d_color", k + 1 );
+		cvar_t *cc = gEngfuncs.pfnGetCvarPointer( n );
+		if( cc ) sscanf( cc->string, "%d %d %d", &cr, &cg, &cb );
+		vec3_t c, p0, p1, p2, p3;
+		for( int i = 0; i < 3; i++ )
+		{
+			c[i] = att[i] + fw[i] * fo + rt[i] * ro + up[i] * uo;
+			p0[i] = c[i] - rt[i] * half + up[i] * half;
+			p1[i] = c[i] + rt[i] * half + up[i] * half;
+			p2[i] = c[i] + rt[i] * half - up[i] * half;
+			p3[i] = c[i] - rt[i] * half - up[i] * half;
+		}
+		gEngfuncs.pTriAPI->SpriteTexture( (model_s *)m, 0 );
+		gEngfuncs.pTriAPI->RenderMode( kRenderTransAdd );
+		gEngfuncs.pTriAPI->CullFace( TRI_NONE );
+		gEngfuncs.pTriAPI->Begin( TRI_QUADS );
+		gEngfuncs.pTriAPI->Color4f( cr / 255.0f, cg / 255.0f, cb / 255.0f, al );
+		gEngfuncs.pTriAPI->TexCoord2f( 0, 0 ); gEngfuncs.pTriAPI->Vertex3fv( p0 );
+		gEngfuncs.pTriAPI->TexCoord2f( 1, 0 ); gEngfuncs.pTriAPI->Vertex3fv( p1 );
+		gEngfuncs.pTriAPI->TexCoord2f( 1, 1 ); gEngfuncs.pTriAPI->Vertex3fv( p2 );
+		gEngfuncs.pTriAPI->TexCoord2f( 0, 1 ); gEngfuncs.pTriAPI->Vertex3fv( p3 );
+		gEngfuncs.pTriAPI->End();
+		gEngfuncs.pTriAPI->RenderMode( kRenderNormal );
+	}
 }
