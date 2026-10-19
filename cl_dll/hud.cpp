@@ -353,7 +353,10 @@ void CHud :: Init( void )
 	m_pShowMoney = CVAR_CREATE( "scoreboard_showmoney", "1", FCVAR_ARCHIVE );
 
 	// The cvar was taken from the OpenAG client
-	m_pCvarColor = CVAR_CREATE( "hud_color", !strcmp( gEngfuncs.pfnGetGameDirectory(), "czeror" ) ? "50 250 50" : "255 160 0", FCVAR_ARCHIVE );
+	if( !strcmp( gEngfuncs.pfnGetGameDirectory(), "czeror" ) )
+		m_pCvarColor = CVAR_CREATE( "cz_hud_color", "50 250 50", 0 ); // not archived: old saved hud_color must not override the CZ green
+	else
+		m_pCvarColor = CVAR_CREATE( "hud_color", "255 160 0", FCVAR_ARCHIVE );
 
 	if ( gEngfuncs.pfnGetCvarFloat( "developer" ) > 0.0f )
 	{
