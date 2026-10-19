@@ -151,10 +151,23 @@ jobs:
         uses: mozilla-actions/sccache-action@v0.0.11
       - name: Configure
         run: cmake -DCMAKE_POLICY_DEFAULT_CMP0141=NEW --preset "win32-ci-${{ matrix.arch }}"
-      - name: Build and Package
+      - name: Build (pass 1, all exports)
+        run: cmake --build .
+        working-directory: build
+      - name: Generate export list (CZDS, Xash 4096 exports limit)
+        shell: bash
         run: |
+          pip install pefile
+          DLL=$(find build -name mp.dll | head -1)
+          echo "mp.dll: $DLL"
+          python scripts/gen_exports.py "$DLL" 3rdparty/ReGameDLL_CS/regamedll "$GITHUB_WORKSPACE/mp_exports.def"
+      - name: Relink with export list
+        run: |
+          cmake -DCZ_EXPORT_DEF="${{ github.workspace }}/mp_exports.def" .
+          (Get-ChildItem -Recurse -Filter mp.dll | Remove-Item -Force)
           cmake --build .
           cpack --config CPackConfig.cmake
+        shell: pwsh
         working-directory: build
       - name: Make slim package (CZDS)
         shell: pwsh
