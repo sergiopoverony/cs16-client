@@ -34,6 +34,11 @@ static const char *SOUNDS_NAME[] =
 	 "weapons/m249-1.wav", "weapons/m249-2.wav"
 };
 
+static const char *M60_SOUNDS[] =
+{
+	 "weapons/m60-1.wav", "weapons/m60-2.wav"
+};
+
 void EV_FireM249(event_args_s *args)
 {
 	vec3_t ShellVelocity, ShellOrigin;
@@ -72,7 +77,7 @@ void EV_FireM249(event_args_s *args)
 
 	EV_EjectBrass(ShellOrigin, ShellVelocity, angles[ YAW ], g_iRShell, TE_BOUNCE_SHELL);
 
-	PLAY_EVENT_SOUND( SOUNDS_NAME[Com_RandomLong(0, 1)] );
+	PLAY_EVENT_SOUND( args->bparam1 ? M60_SOUNDS[Com_RandomLong(0, 1)] : SOUNDS_NAME[Com_RandomLong(0, 1)] );
 
 	EV_GetGunPosition( args, vecSrc, origin );
 	VectorCopy( forward, vecAiming );
