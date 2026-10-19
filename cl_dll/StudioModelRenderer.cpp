@@ -46,7 +46,7 @@ extern CGameStudioModelRenderer g_StudioRenderer;
 extern engine_studio_api_t IEngineStudio;
 typedef struct pmtrace_s pmtrace_t;
 
-extern void CZ_TorchViewModelDraw( const float *att );
+extern void CZ_TorchSetAttachment( cl_entity_t *pEntity );
 void CStudioModelRenderer::Init(void)
 {
 	m_pCvarHiModels = IEngineStudio.GetCvar("cl_himodels");
@@ -949,7 +949,7 @@ int CStudioModelRenderer::StudioDrawModel(int flags)
 
 		StudioRenderModel(dir);
 		if( bIsViewModel )
-			CZ_TorchViewModelDraw( m_pCurrentEntity->attachment[0] );
+			CZ_TorchSetAttachment( m_pCurrentEntity );
 	}
 
 	if( bChangedRightHand )

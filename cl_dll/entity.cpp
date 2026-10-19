@@ -234,105 +234,12 @@ bool g_czTorchOn = false;
 float g_czTorchSize = 1.0f;
 bool g_czTorchAtk = false;
 
-// blowtorch flame: a small pink-white flame at the nozzle plus a soft light on the walls.
-// The position is computed from the view (cz_torch_fwd/right/up, tweakable live); the view model attachment is optional (cz_torch_att 1)
-void CZ_TorchEntities( void );
-static bool g_czTorchPrevOk = false;
+// blowtorch flame: particles at the view model attachment (cz_torch.cpp, ported from featureful)
+void CZ_TorchUpdate( void );
 static void CZ_TorchFlame( void )
 {
-	static cvar_t *fwd, *right, *up, *att, *size;
 	g_czTorchOn = false;
-	if( g_czTool != 3 || g_czFiber || !gEngfuncs.GetLocalPlayer() || gEngfuncs.IsSpectateOnly() )
-	{
-		g_czTorchPrevOk = false;
-		return;
-	}
-	if( !fwd )
-	{
-		fwd   = gEngfuncs.pfnRegisterVariable( "cz_torch_fwd",   "20", 0 );
-		right = gEngfuncs.pfnRegisterVariable( "cz_torch_right", "7", 0 );
-		up    = gEngfuncs.pfnRegisterVariable( "cz_torch_up",    "-4",  0 );
-		att   = gEngfuncs.pfnRegisterVariable( "cz_torch_att",   "1",  0 );
-		size  = gEngfuncs.pfnRegisterVariable( "cz_torch_size",  "1",  0 );
-	}
-	vec3_t f, r, u, pos;
-	gEngfuncs.pfnAngleVectors( v_angles, f, r, u );
-
-	// The view model attachment was written while the PREVIOUS frame was drawn (HUD_CreateEntities runs before the view model is drawn),
-	// so it belongs to the previous view. Convert it into the previous view's axes and rebuild it with the current ones: no lag.
-	static vec3_t prevOrg, prevAng;
-	bool &prevOk = g_czTorchPrevOk;
-	bool have = false;
-	cl_entity_t *vmE = gEngfuncs.GetViewModel();
-	// cz_torch_att 1: the base is the current view model origin/angles (includes bob and sway); 2: the plain view
-	vec3_t baseOrg, baseAng;
-	VectorCopy( v_origin, baseOrg );
-	VectorCopy( v_angles, baseAng );
-	if( false && att && vmE && ( vmE->origin[0] != 0.0f || vmE->origin[1] != 0.0f || vmE->origin[2] != 0.0f ))
-	{
-		VectorCopy( vmE->origin, baseOrg );
-		VectorCopy( vmE->angles, baseAng );
-	}
-	if( att && att->value > 0.0f && prevOk )
-	{
-		cl_entity_t *vm = vmE;
-		if( vm )
-		{
-			vec3_t pf, pr, pu, rel;
-			gEngfuncs.pfnAngleVectors( prevAng, pf, pr, pu );
-			float d2 = 0;
-			for( int i = 0; i < 3; i++ )
-			{
-				rel[i] = vm->attachment[0][i] - prevOrg[i];
-				d2 += rel[i] * rel[i];
-			}
-			if( d2 > 4.0f && d2 < 60.0f * 60.0f )
-			{
-				float a = DotProduct( rel, pf ), b = DotProduct( rel, pr ), c = DotProduct( rel, pu );
-				vec3_t bf, br, bu;
-				gEngfuncs.pfnAngleVectors( baseAng, bf, br, bu );
-				for( int i = 0; i < 3; i++ )
-					pos[i] = baseOrg[i] + bf[i] * a + br[i] * b + bu[i] * c;
-				// fine tuning offsets, in the current view axes
-				for( int i = 0; i < 3; i++ )
-					pos[i] += f[i] * fwd->value + r[i] * right->value + u[i] * up->value;
-				have = true;
-			}
-		}
-	}
-	VectorCopy( baseOrg, prevOrg );
-	VectorCopy( baseAng, prevAng );
-	prevOk = true;
-	if( !have )
-	{
-		float a = fwd->value, b = right->value, c = up->value;
-		for( int i = 0; i < 3; i++ )
-			pos[i] = v_origin[i] + f[i] * a + r[i] * b + u[i] * c;
-	}
-
-	bool atk = ( gHUD.m_iKeyBits & IN_ATTACK ) != 0;
-	float flick = 0.9f + 0.1f * sinf( gHUD.m_flTime * 40.0f );
-	float sz = size ? size->value : 1.0f;
-
-	// light on the surroundings
-	dlight_t *dl = gEngfuncs.pEfxAPI->CL_AllocDlight( 1 );
-	if( dl )
-	{
-		VectorCopy( pos, dl->origin );
-		dl->radius = ( atk ? 130.0f : 100.0f ) * flick;
-		dl->color.r = 255;
-		dl->color.g = 150;
-		dl->color.b = 190;
-		dl->die = gEngfuncs.GetClientTime() + 0.05f;
-		dl->decay = 0;
-	}
-
-	// the flame itself is drawn by the HUD (status_icons.cpp) on top of the view model, from this point
-	VectorCopy( pos, g_czTorchPos );
-	g_czTorchOn = true;
-	g_czTorchSize = sz * flick * ( atk ? 1.4f : 1.0f );
-	g_czTorchAtk = atk;
-	CZ_TorchEntities();
+	CZ_TorchUpdate();
 }
 
 void DLLEXPORT HUD_CreateEntities( void )
