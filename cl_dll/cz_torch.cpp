@@ -10,7 +10,7 @@
 #include "particleman.h"
 
 extern int g_czTool, g_czFiber;
-extern vec3_t v_angles;
+extern vec3_t v_angles, v_origin;
 
 // 0 = off, 1 = pilot (idle), 2 = burning (attack held)
 static int g_torchState = 0;
@@ -21,10 +21,27 @@ static char g_torchSprName[64] = "";
 
 static cvar_t *cz_torch_spr = nullptr;
 
+// view the attachment was taken in (the view model is drawn after the effect is created, so the
+// attachment is one frame old: it is re-expressed in the current view to avoid lagging behind when turning)
+static Vector g_vTorchViewOrg, g_vTorchViewAng;
+
 void CZ_TorchSetAttachment( cl_entity_t *pEntity )
 {
 	if( g_torchState && gEngfuncs.GetViewModel() == pEntity )
+	{
 		g_vTorchAttachment = pEntity->attachment[0];
+		g_vTorchViewOrg = v_origin;
+		g_vTorchViewAng = v_angles;
+	}
+}
+
+static Vector CzTorchPos()
+{
+	Vector f0, r0, u0, f1, r1, u1;
+	gEngfuncs.pfnAngleVectors( g_vTorchViewAng, f0, r0, u0 );
+	gEngfuncs.pfnAngleVectors( v_angles, f1, r1, u1 );
+	const Vector d = g_vTorchAttachment - g_vTorchViewOrg;
+	return v_origin + f1 * DotProduct( d, f0 ) + r1 * DotProduct( d, r0 ) + u1 * DotProduct( d, u0 );
 }
 
 class CPartTorchGlow : public CBaseParticle
@@ -32,7 +49,7 @@ class CPartTorchGlow : public CBaseParticle
 public:
 	void Think( float flTime ) override
 	{
-		m_vOrigin = g_vTorchAttachment;
+		m_vOrigin = CzTorchPos();
 		CBaseParticle::Think( flTime );
 	}
 };
@@ -54,13 +71,13 @@ public:
 		{
 			const float r1 = Com_RandomFloat( -0.065f, 0.065f );
 			const float r2 = Com_RandomFloat( -0.08f, 0.08f );
-			m_vOrigin = g_vTorchAttachment + forward * m_flForward + r2 * right + r1 * up;
+			m_vOrigin = CzTorchPos() + forward * m_flForward + r2 * right + r1 * up;
 		}
 		else
 		{
 			const float r1 = Com_RandomFloat( -0.05f, 0.05f );
 			const float r2 = Com_RandomFloat( -0.05f, 0.05f );
-			m_vOrigin = g_vTorchAttachment + forward * m_flForward / 1.5f + r2 * right + r1 * up;
+			m_vOrigin = CzTorchPos() + forward * m_flForward / 1.5f + r2 * right + r1 * up;
 		}
 
 		const float now = gEngfuncs.GetClientTime();
@@ -148,7 +165,7 @@ void CZ_TorchUpdate()
 		CPartTorchGlow *glow = new CPartTorchGlow();
 		if( glow )
 		{
-			glow->InitializeSprite( g_vTorchAttachment, Vector(), g_torchGlowModel,
+			glow->InitializeSprite( CzTorchPos(), Vector(), g_torchGlowModel,
 				firing ? Com_RandomFloat( 11.0f, 12.0f ) : Com_RandomFloat( 4.0f, 5.0f ), 225 );
 			glow->SetLightFlag( LIGHT_NONE );
 			glow->SetRenderFlag( RENDER_FACEPLAYER );
@@ -163,7 +180,7 @@ void CZ_TorchUpdate()
 	dlight_t *light = gEngfuncs.pEfxAPI->CL_AllocDlight( 0 );
 	if( light )
 	{
-		VectorCopy( g_vTorchAttachment, light->origin );
+		VectorCopy( CzTorchPos(), light->origin );
 		if( firing )
 		{
 			light->radius = 75.0f;
@@ -179,7 +196,7 @@ void CZ_TorchUpdate()
 		light->die = now + 0.08f;
 	}
 
-	CreatePilotFlame( g_vTorchAttachment );
+	CreatePilotFlame( CzTorchPos() );
 
 	flOldTime = now;
 }
