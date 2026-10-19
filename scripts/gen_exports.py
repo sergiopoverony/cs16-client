@@ -21,7 +21,10 @@ for s in pe.DIRECTORY_ENTRY_EXPORT.symbols:
     if not s.name: continue
     n = s.name.decode()
     if not n.startswith('?') or any(n.startswith(p) for p in pairs):
-        keep.append(n)
+        m = re.fullmatch(r'_([A-Za-z0-9_]+)@\d+', n)  # x86 stdcall: let the linker decorate the name itself
+        keep.append(m.group(1) if m else n)
+if 'GiveFnptrsToDll' not in keep:
+    keep.append('GiveFnptrsToDll')
 print('total exports', len(pe.DIRECTORY_ENTRY_EXPORT.symbols), 'kept', len(keep), 'wanted', len(pairs))
 if len(keep) > 4000:
     sys.exit('too many exports')
