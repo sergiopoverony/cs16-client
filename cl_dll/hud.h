@@ -613,6 +613,7 @@ public:
 	CHudMsgFunc(Flashlight);
 	CHudMsgFunc(FlashBat);
 	int GetIconWidth( void ) const { return m_iWidth; }
+	int GetIconHeight( void ) { return m_hSprite1.rect.Height(); }
 	
 private:
 	CClientSprite m_hSprite1;

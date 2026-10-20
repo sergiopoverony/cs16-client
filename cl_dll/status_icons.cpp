@@ -190,7 +190,7 @@ static void CZ_DrawTools( float flTime )
 			numW = gHUD.GetSpriteRect( gHUD.m_HUD_number_0 ).right - gHUD.GetSpriteRect( gHUD.m_HUD_number_0 ).left + 10;
 		int w = 3 + pad + textW + gap + numW + iconW + pad;
 		int h = iconH + 16;
-		int margin = 24;
+		int margin = 0;
 		int x = ScreenWidth - w - margin + (int)( slide * ( w + margin ) );
 		int y = ScreenHeight - 150 - h - ( g_czTool == 4 ? 70 : 0 );
 		int r = 50 * fade, g = 250 * fade, b2 = 50 * fade;
