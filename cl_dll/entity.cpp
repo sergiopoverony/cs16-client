@@ -42,10 +42,19 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 	switch ( type )
 	{
 	case ET_NORMAL:
-		// czeror: dark-textured lab microscopes (cz_train02 shelves) rendered black: light them flat (EF_FULLBRIGHT is
-		// set here, client side, because the high effects bit does not reliably survive the entity delta)
-		if( modelname && !ent->player && strstr( modelname, "microscope" ))
-			ent->curstate.effects |= ( 1U << 27 );
+		// czeror diagnostics: lightmultiplier props (renderfx 25): does iuser4 (the multiplier) reach the client?
+		if( ent->curstate.renderfx == kRenderFxLightMultiplier )
+		{
+			// the server also sends the multiplier in renderamt (iuser4 can be lost in the delta)
+			if( ent->curstate.iuser4 == 0 && ent->curstate.renderamt > 0 )
+				ent->curstate.iuser4 = ent->curstate.renderamt;
+			static unsigned char seen[4096];
+			if( ent->index > 0 && ent->index < 4096 && !seen[ent->index] )
+			{
+				seen[ent->index] = 1;
+				gEngfuncs.Con_Printf( "lightmul: ent %d %s iuser4=%d\n", ent->index, modelname ? modelname : "?", ent->curstate.iuser4 );
+			}
+		}
 		// fall through
 	case ET_PLAYER:
 		if( ent->player && iOnTrain[ent->index] )
