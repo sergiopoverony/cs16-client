@@ -59,6 +59,11 @@ int CHudTimer::Draw( float fTime )
 	if( gHUD.m_iHideHUDDisplay & ( HIDEHUD_TIMER | HIDEHUD_ALL ) )
 		return 1;
 
+	// czeror hud.txt has no "stopwatch" sprite (CZ has no round timer): drawing with
+	// index -1 renders a chunk of the sprite sheet as garbage
+	if( m_HUD_timer < 0 )
+		return 1;
+
 	if (!(gHUD.m_iWeaponBits & (1<<(WEAPON_SUIT)) ))
 		return 1;
 
