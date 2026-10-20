@@ -43,7 +43,7 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 	{
 	case ET_NORMAL:
 		// czeror diagnostics: lightmultiplier props (renderfx 25): does iuser4 (the multiplier) reach the client?
-		if( ent->curstate.renderfx == kRenderFxLightMultiplier )
+		if( ent->curstate.renderfx == 21 /* kRenderFxLightMultiplier */ )
 		{
 			// the server also sends the multiplier in renderamt (iuser4 can be lost in the delta)
 			if( ent->curstate.iuser4 == 0 && ent->curstate.renderamt > 0 )
