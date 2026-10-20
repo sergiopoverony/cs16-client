@@ -126,20 +126,14 @@ int CHudHealth::VidInit(void)
 			m_dmgSprite[k] = idx;
 		}
 
-		// czeror: chemical attack must show the hazard sign (dmg_chem is commented out in hud.txt):
-		// it sits left of dmg_bio in the same sheet
+		// czeror: dmg_chem is commented out in hud.txt; the hazard (biohazard) sign is dmg_bio
+		// (640hud8 128,0). The sprite at 0,0 is the spilled barrel - not wanted for chemical attack.
 		m_bChemOverride = false;
 		if( gHUD.GetSpriteIndex( "dmg_chem" ) < 0 )
 		{
 			int bio = gHUD.GetSpriteIndex( "dmg_bio" );
 			if( bio >= 0 )
-			{
-				wrect_t r = gHUD.GetSpriteRect( bio );
-				int w = r.right - r.left;
-				m_rcChem.left = 0; m_rcChem.top = 0; m_rcChem.right = w; m_rcChem.bottom = w;
 				m_dmgSprite[1] = m_dmgSprite[5] = bio;
-				m_bChemOverride = true;
-			}
 		}
 	}
 	m_HUD_cross = gHUD.GetSpriteIndex( "cross" );
