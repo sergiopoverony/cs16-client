@@ -42,6 +42,16 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 	switch ( type )
 	{
 	case ET_NORMAL:
+		if( modelname && strstr( modelname, "microscope" ) && ent->index > 0 && ent->index < 4096 )
+		{
+			static unsigned char seenM[4096];
+			if( !seenM[ent->index] )
+			{
+				seenM[ent->index] = 1;
+				gEngfuncs.Con_Printf( "microscope: ent %d renderfx=%d rendermode=%d renderamt=%d iuser4=%d effects=%d\n", ent->index,
+					ent->curstate.renderfx, ent->curstate.rendermode, ent->curstate.renderamt, ent->curstate.iuser4, ent->curstate.effects );
+			}
+		}
 		// czeror diagnostics: lightmultiplier props (renderfx 25): does iuser4 (the multiplier) reach the client?
 		if( ent->curstate.renderfx == 21 /* kRenderFxLightMultiplier */ )
 		{
