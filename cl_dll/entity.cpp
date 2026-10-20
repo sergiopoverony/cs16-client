@@ -42,6 +42,11 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 	switch ( type )
 	{
 	case ET_NORMAL:
+		// czeror: dark-textured lab microscopes (cz_train02 shelves) rendered black: light them flat (EF_FULLBRIGHT is
+		// set here, client side, because the high effects bit does not reliably survive the entity delta)
+		if( modelname && !ent->player && strstr( modelname, "microscope" ))
+			ent->curstate.effects |= ( 1U << 27 );
+		// fall through
 	case ET_PLAYER:
 		if( ent->player && iOnTrain[ent->index] )
 		{
