@@ -85,7 +85,8 @@ int CHudBattery::Draw( float flTime )
 	// battery can go from 0 to 100 so * 0.01 goes from 0 to 1
 	rc.top += m_iHeight * ((float)( 100 - ( min( 100, m_iBat ))) * 0.01f );
 
-	DrawUtils::UnpackRGB( r, g, b, gHUD.m_iDefaultHUDColor );
+	// CZ: empty armor is drawn red
+	DrawUtils::UnpackRGB( r, g, b, m_iBat <= 0 ? RGB_REDISH : gHUD.m_iDefaultHUDColor );
 
 	// Has health changed? Flash the health #
 	if( m_fFade )
