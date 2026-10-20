@@ -172,22 +172,37 @@ static void CZ_DrawTools( float flTime )
 		if( fade < 0 ) fade = 0;
 		if( age < 0 ) age = 0;
 
-		int margin = ScreenWidth / 50;
-		int w = ScreenWidth * 15 / 100, h = ScreenHeight * 8 / 100;
+		// layout from real pixel sizes (text, sprite) so it looks the same at any resolution
+		int iconW = 32, iconH = 32;
+		{
+			int idx = gHUD.GetSpriteIndex( toolIcons[g_czTool] );
+			if( idx >= 0 )
+			{
+				wrect_t rc = gHUD.GetSpriteRect( idx );
+				iconW = rc.right - rc.left;
+				iconH = rc.bottom - rc.top;
+			}
+		}
+		int pad = 12, gap = 28;
+		int textW = DrawUtils::HudStringLen( "EQUIPMENT" );
+		int numW = 0;
+		if( g_czTool == 4 )
+			numW = gHUD.GetSpriteRect( gHUD.m_HUD_number_0 ).right - gHUD.GetSpriteRect( gHUD.m_HUD_number_0 ).left + 10;
+		int w = 3 + pad + textW + gap + numW + iconW + pad;
+		int h = iconH + 16;
+		int margin = 24;
 		int x = ScreenWidth - w - margin + (int)( slide * ( w + margin ) );
-		int y = ScreenHeight * 80 / 100 - ( g_czTool == 4 ? 70 : 0 );
-		int A = (int)( 255 * fade );
+		int y = ScreenHeight - 150 - h - ( g_czTool == 4 ? 70 : 0 );
 		int r = 50 * fade, g = 250 * fade, b2 = 50 * fade;
 
 		FillRGBABlend( x, y, w, h, 0, 0, 0, (int)( 120 * fade ) );          // dark glass
 		FillRGBABlend( x, y, 3, h, 50, 250, 50, (int)( 230 * fade ) );       // accent bar
 		FillRGBABlend( x, y, w, 1, 50, 250, 50, (int)( 90 * fade ) );        // thin top / bottom lines
 		FillRGBABlend( x, y + h - 1, w, 1, 50, 250, 50, (int)( 90 * fade ) );
-		( void )A;
-		DrawUtils::DrawHudString( x + 12, y + h / 2 - 8, ScreenWidth, "EQUIPMENT", r, g, b2 );
-		CZ_DrawSprite( toolIcons[g_czTool], x + w - 40 - ScreenWidth / 100, y + ( h - 32 ) / 2, r, g, b2 );
+		DrawUtils::DrawHudString( x + 3 + pad, y + h / 2 - 8, ScreenWidth, "EQUIPMENT", r, g, b2 );
 		if( g_czTool == 4 )
-			DrawUtils::DrawHudNumberString( x + w - 52 - ScreenWidth / 100, y + h / 2 - 12, 0, g_czCount, r, g, b2 );
+			DrawUtils::DrawHudNumberString( x + w - pad - iconW - numW + 4, y + h / 2 - 12, 0, g_czCount, r, g, b2 );
+		CZ_DrawSprite( toolIcons[g_czTool], x + w - pad - iconW, y + ( h - iconH ) / 2, r, g, b2 );
 	}
 
 	// mines: icon and counter in the bottom right corner
