@@ -804,8 +804,14 @@ int CHudAmmo::MsgFunc_Brass( const char *pszName, int iSize, void *pbuf )
 // Command Handlers
 //------------------------------------------------------------------------
 // Slot button pressed
+extern bool CZ_HasTool();
 void CHudAmmo::SlotInput( int iSlot )
 {
+	if( iSlot == 4 && CZ_HasTool() )
+	{
+		ServerCmd( "cz_tool" );
+		return;
+	}
 	gWR.SelectSlot(iSlot, FALSE, 1);
 }
 

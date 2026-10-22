@@ -69,6 +69,8 @@ void CHudStatusIcons::Reset( void )
 
 // ---- CZ mission tools HUD ----
 
+bool CZ_HasTool() { return g_czTool != 0; }
+
 int CHudStatusIcons::MsgFunc_CzTool( const char *pszName, int iSize, void *pbuf )
 {
 	BufferReader reader( pszName, pbuf, iSize );
