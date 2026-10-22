@@ -69,7 +69,7 @@ void CHudStatusIcons::Reset( void )
 
 // ---- CZ mission tools HUD ----
 
-bool CZ_HasTool() { return g_czTool != 0; }
+bool CZ_HasTool() { return g_czTool != 0 && g_czTool != 4; } // the mine is a real weapon: key 5 selects it natively
 
 int CHudStatusIcons::MsgFunc_CzTool( const char *pszName, int iSize, void *pbuf )
 {
@@ -211,8 +211,7 @@ static void CZ_DrawTools( float flTime )
 	if( g_czTool == 4 )
 	{
 		int x = ScreenWidth - 150, y = ScreenHeight - 70;
-		CZ_DrawSprite( toolIcons[4], x, y, 50, 250, 50 );
-		DrawUtils::DrawHudNumberString( x + 130, y + 20, 0, g_czCount, 50, 250, 50 );
+		// the icon and the counter come from the native weapon HUD (the mine is a real weapon now)
 		if( g_czHold )
 			DrawUtils::DrawHudString( x - 4, y - 14, ScreenWidth, "DETONATOR", 50, 250, 50 );
 	}
