@@ -286,7 +286,7 @@ int CHudAmmo::Init(void)
 	// CVAR_CREATE( "cl_observercrosshair", "1", 0 );
 	m_pClCrosshairColor = (convar_t*)CVAR_CREATE( "cl_crosshair_color", "50 250 50", FCVAR_ARCHIVE );
 	m_pClCrosshairTranslucent = (convar_t*)CVAR_CREATE( "cl_crosshair_translucent", "1", FCVAR_ARCHIVE );
-	m_pClCrosshairSize = (convar_t*)CVAR_CREATE( "cl_crosshair_size", "auto", FCVAR_ARCHIVE );
+	m_pClCrosshairSize = (convar_t*)CVAR_CREATE( "cl_crosshair_size", "small", FCVAR_ARCHIVE );
 	m_pClDynamicCrosshair = CVAR_CREATE("cl_dynamiccrosshair", "1", FCVAR_ARCHIVE);
 
 	m_hStaticSpr = 0;
