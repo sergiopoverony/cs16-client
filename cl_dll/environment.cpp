@@ -25,6 +25,7 @@ extern engine_studio_api_t IEngineStudio;
 
 extern Vector g_vPlayerVelocity;
 extern const Vector g_vecZero;
+extern vec3_t v_origin, v_angles;
 
 void VectorAngles( const float *forward, float *angles );
 
@@ -722,6 +723,10 @@ void CEnvironment::Reset()
 	m_vecDesiredWindDirection.z = 0;
 
 	m_flNextWindChangeTime = gEngfuncs.GetClientTime();
+
+	// CZ:DS: the particles were just removed (new level / load): the grass must be placed again
+	m_bGrassPlaced = false;
+	m_iGrassCount = 0;
 }
 
 void CEnvironment::Clear()
@@ -756,8 +761,17 @@ void CEnvironment::Update()
 
 	m_vecWeatherOrigin = vecOrigin;
 
+	// CZ:DS: the view direction for the grass pieces (original CEnvironment::Update)
+	{
+		Vector vecForward, vecRight, vecUp;
+		gEngfuncs.pfnAngleVectors( v_angles, vecForward, vecRight, vecUp );
+		m_vecCameraForward = vecForward.Normalize();
+	}
+
 	if (ShouldUpdateWind())
 		UpdateWind();
+
+	UpdateGrass();
 
 	const float clientTime = gEngfuncs.GetClientTime();
 
@@ -1622,7 +1636,292 @@ int CEnvironment::MsgFunc_GrassInfo(const char *pszName, int iSize, void *pbuf)
 	m_iGrassDensity = reader.ReadLong();
 	if (m_fGrassMinHeight > m_fGrassMaxHeight)
 		m_fGrassMaxHeight = m_fGrassMinHeight;
+	SetupGrass();
 	return 1;
+}
+
+// ---------------------------------------------------------------------------
+// CZ:DS grass, like the original CEnvironment::SetupGrass / UpdateGrass / PlaceGrass(Square) /
+// CreateGrassPiece and CGrassPiece::Think (client.so of the retail game).
+// Grass grows only on textures of material type "grass" (materials/<map>.mat, materials/czero.mat).
+// ---------------------------------------------------------------------------
+static cvar_t *cz_grass = nullptr;
+
+class CGrassPiece : public CBaseParticle
+{
+public:
+	void Think( float flTime ) override;
+};
+
+void CGrassPiece::Think( float flTime )
+{
+	Vector vecDelta = m_vOrigin - Vector( v_origin );
+	const float flDist = vecDelta.Length();
+	const float flFade = g_Environment.GetGrassFadeDist();
+
+	if( flDist > flFade + 50.0f )
+	{
+		// out of range: the piece goes away (new ones are placed in front of the player)
+		m_flDieTime = flTime;
+		g_Environment.m_iGrassCount--;
+	}
+	else
+	{
+		Vector vecDir = flDist != 0.0f ? vecDelta * ( 1.0f / flDist ) : Vector( 1, 0, 0 );
+		if( DotProduct( g_Environment.m_vecCameraForward, vecDir ) < 0.5f )
+			m_flBrightness = 0;
+		else if( flDist > flFade - 255.0f )
+		{
+			const float a = 255.0f - ( flDist - ( flFade - 255.0f ) );
+			m_flBrightness = a > 0.0f ? a : 1.0f;
+		}
+		else
+			m_flBrightness = 255.0f;
+	}
+
+	CBaseParticle::Think( flTime );
+}
+
+// CMaterialSystem::FixTextureName: "+0name"/"-0name" -> skip 2, then '{', '~', ' ', '!' -> skip 1
+static std::string Grass_FixTextureName( const char *name )
+{
+	if( !name )
+		return std::string();
+	if( name[0] == '+' || name[0] == '-' )
+	{
+		if( !name[1] )
+			return std::string();
+		name += 2;
+	}
+	if( name[0] == '{' || name[0] == '~' || name[0] == ' ' || name[0] == '!' )
+		name++;
+	std::string s( name );
+	for( auto &c : s )
+		c = (char)tolower( (unsigned char)c );
+	return s;
+}
+
+void CEnvironment::LoadGrassMaterials( const char *path, std::vector<std::pair<std::string, bool>> &list )
+{
+	int length = 0;
+	char *file = (char *)gEngfuncs.COM_LoadFile( (char *)path, 5, &length );
+	if( !file )
+		return;
+
+	char token[1024];
+	char *p = file;
+	std::string texture;
+	while( ( p = gEngfuncs.COM_ParseFile( p, token ) ) != nullptr )
+	{
+		if( !strcasecmp( token, "texture" ) )
+		{
+			p = gEngfuncs.COM_ParseFile( p, token );
+			if( !p )
+				break;
+			texture = Grass_FixTextureName( token );
+		}
+		else if( !strcasecmp( token, "type" ) && !texture.empty() )
+		{
+			p = gEngfuncs.COM_ParseFile( p, token );
+			if( !p )
+				break;
+			const bool grass = !strcasecmp( token, "grass" );
+			bool found = false;
+			for( auto &e : list )
+			{
+				if( e.first == texture )
+				{
+					e.second = grass; // the map file is read last: it overrides czero.mat
+					found = true;
+					break;
+				}
+			}
+			if( !found )
+				list.emplace_back( texture, grass );
+		}
+	}
+	gEngfuncs.COM_FreeFile( file );
+}
+
+bool CEnvironment::IsGrassTexture( const char *texture ) const
+{
+	if( !texture )
+		return false;
+	const std::string t = Grass_FixTextureName( texture );
+	for( const auto &g : m_grassTextures )
+		if( g == t )
+			return true;
+	return false;
+}
+
+void CEnvironment::SetupGrass()
+{
+	if( !cz_grass )
+		cz_grass = CVAR_CREATE( "cz_grass", "1", FCVAR_ARCHIVE );
+
+	// GrassInfo comes with every HUD init (respawn too): the grass already standing stays
+	if( m_bGrassPlaced )
+		return;
+	m_bGrassPlaced = true;
+
+	m_bGrassActive = false;
+	m_bPlaceInitialGrass = true;
+	m_flGrassTime = 0;
+	m_vecGrassOrigin = Vector( 99999, 99999, 99999 );
+	m_iGrassRingCount = m_iGrassDensity;
+	m_grassTextures.clear();
+
+	// the sprites: the map's grassSprite for both, otherwise grass_01 / grass_03
+	if( m_szGrassSpriteName[0] )
+	{
+		m_pGrassSprite1 = m_pGrassSprite2 = LoadSprite( m_szGrassSpriteName );
+	}
+	else
+	{
+		m_pGrassSprite1 = LoadSprite( "sprites/grass_01.spr" );
+		m_pGrassSprite2 = LoadSprite( "sprites/grass_03.spr" );
+	}
+
+	// textures of material type grass: czero.mat, then the map's own file
+	char mapname[256];
+	const char *level = gEngfuncs.pfnGetLevelName();
+	const char *base = level ? strrchr( level, '/' ) : nullptr;
+	base = base ? base + 1 : level;
+	strncpy( mapname, base ? base : "", sizeof( mapname ) - 1 );
+	mapname[sizeof( mapname ) - 1] = 0;
+	char *dot = strrchr( mapname, '.' );
+	if( dot )
+		*dot = 0;
+
+	std::vector<std::pair<std::string, bool>> list;
+	LoadGrassMaterials( "materials/czero.mat", list );
+	if( mapname[0] )
+	{
+		char path[300];
+		snprintf( path, sizeof( path ), "materials/%s.mat", mapname );
+		LoadGrassMaterials( path, list );
+	}
+	for( const auto &e : list )
+		if( e.second )
+			m_grassTextures.push_back( e.first );
+
+	m_bGrassActive = !m_grassTextures.empty() && ( m_pGrassSprite1 || m_pGrassSprite2 );
+	gEngfuncs.Con_DPrintf( "cz grass: map '%s', %d grass textures, density %d, fade %.0f, height %.0f-%.0f -> %s\n",
+		mapname, (int)m_grassTextures.size(), m_iGrassDensity, m_fGrassFadeDist, m_fGrassMinHeight, m_fGrassMaxHeight,
+		m_bGrassActive ? "on" : "off" );
+}
+
+// a point straight down from (x, y, z) to z = -800 (like the original), on a grass texture
+bool CEnvironment::TraceGrassSpot( float x, float y, float z, Vector &hit )
+{
+	Vector vecStart( x, y, z );
+	Vector vecEnd( x, y, -800.0f );
+	pmtrace_t trace;
+	gEngfuncs.pEventAPI->EV_SetTraceHull( 2 );
+	gEngfuncs.pEventAPI->EV_PlayerTrace( vecStart, vecEnd, PM_WORLD_ONLY, -1, &trace );
+	if( trace.allsolid || trace.startsolid || trace.fraction >= 1.0f )
+		return false;
+	const char *pszTexture = gEngfuncs.pEventAPI->EV_TraceTexture( trace.ent, vecStart, vecEnd );
+	if( !IsGrassTexture( pszTexture ) )
+		return false;
+	hit = trace.endpos;
+	return true;
+}
+
+void CEnvironment::CreateGrassPiece( const Vector &origin, const Vector &angles, float size )
+{
+	if( !g_pParticleMan )
+		return;
+
+	model_t *sprite = Com_RandomLong( 0, 1 ) ? m_pGrassSprite1 : m_pGrassSprite2;
+	if( !sprite )
+		sprite = m_pGrassSprite1 ? m_pGrassSprite1 : m_pGrassSprite2;
+	if( !sprite )
+		return;
+
+	CGrassPiece *pParticle = new CGrassPiece();
+	pParticle->InitializeSprite( origin, angles, sprite, size, 1.0f );
+	strcpy( pParticle->m_szClassname, "grass" );
+	pParticle->SetCollisionFlags( TRI_WATERTRACE );
+	pParticle->m_flGravity = 0;
+	pParticle->m_iRendermode = kRenderTransAlpha;
+	pParticle->SetCullFlag( CULL_PVS | CULL_FRUSTUM_PLANE );
+	pParticle->SetLightFlag( LIGHT_COLOR );
+	pParticle->m_vVelocity = g_vecZero;
+	pParticle->m_vAVelocity = g_vecZero;
+	pParticle->m_vAngles = angles;
+	pParticle->m_flFadeSpeed = -1.0f;
+	pParticle->m_vColor = Vector( 125, 125, 125 );
+	pParticle->m_flDieTime = gEngfuncs.GetClientTime() + 99999.0f;
+	m_iGrassCount++;
+}
+
+// the first placement: a square around the player
+void CEnvironment::PlaceGrassSquare( float halfSize, int count )
+{
+	for( int i = 0; i < count; i++ )
+	{
+		const float x = m_vecGrassOrigin.x + Com_RandomFloat( -halfSize, halfSize );
+		const float y = m_vecGrassOrigin.y + Com_RandomFloat( -halfSize, halfSize );
+		Vector hit;
+		if( !TraceGrassSpot( x, y, m_vecGrassOrigin.z + 36.0f, hit ) )
+			continue;
+		const Vector angles( 0.0f, Com_RandomFloat( 0, 359 ), 0.0f );
+		CreateGrassPiece( hit, angles, Com_RandomFloat( m_fGrassMinHeight, m_fGrassMaxHeight ) );
+	}
+}
+
+// after moving: a ring at the edge of the visible range, outside the area covered before
+void CEnvironment::PlaceGrass( float innerRadius, float outerRadius, int count, const Vector &oldOrigin )
+{
+	for( int i = 0; i < count; i++ )
+	{
+		const float dist = Com_RandomFloat( innerRadius, outerRadius );
+		const float ang = Com_RandomFloat( 0, 359 ) * ( M_PI / 180.0f );
+		const float x = m_vecGrassOrigin.x + cos( ang ) * dist;
+		const float y = m_vecGrassOrigin.y + sin( ang ) * dist;
+		const float z = m_vecGrassOrigin.z + 36.0f;
+		if( !m_bPlaceInitialGrass )
+		{
+			const Vector d( oldOrigin.x - x, oldOrigin.y - y, oldOrigin.z - z );
+			if( d.Length() < m_fGrassFadeDist + 50.0f )
+				continue; // this spot already has grass from before
+		}
+		Vector hit;
+		if( !TraceGrassSpot( x, y, z, hit ) )
+			continue;
+		const Vector angles( 0.0f, Com_RandomFloat( 0, 359 ), 0.0f );
+		CreateGrassPiece( hit, angles, Com_RandomFloat( m_fGrassMinHeight, m_fGrassMaxHeight ) );
+	}
+}
+
+void CEnvironment::UpdateGrass()
+{
+	if( !m_bGrassActive || ( cz_grass && cz_grass->value == 0.0f ) )
+		return;
+	const float now = gEngfuncs.GetClientTime();
+	if( now < m_flGrassTime )
+		return;
+	cl_entity_t *player = gEngfuncs.GetLocalPlayer();
+	if( !player )
+		return;
+	if( ( Vector( player->origin ) - m_vecGrassOrigin ).Length() < 50.0f )
+		return;
+
+	const Vector oldOrigin = m_vecGrassOrigin;
+	m_vecGrassOrigin = player->origin;
+	m_flGrassTime = now + 0.3f;
+
+	if( m_bPlaceInitialGrass )
+	{
+		PlaceGrassSquare( m_fGrassFadeDist + 50.0f, (int)( m_iGrassDensity * 1.2732395f ) );
+		m_bPlaceInitialGrass = false;
+		// the ring between r and r + 50 compared to the whole circle: ((r + 50)^2 - r^2) / r^2
+		if( m_fGrassFadeDist > 0.0f )
+			m_iGrassRingCount = (int)( ( m_fGrassFadeDist * 100.0f + 2500.0f ) / ( m_fGrassFadeDist * m_fGrassFadeDist ) * m_iGrassDensity );
+		return;
+	}
+	PlaceGrass( m_fGrassFadeDist, m_fGrassFadeDist + 50.0f, m_iGrassRingCount, oldOrigin );
 }
 
 int CEnvironment::MsgFunc_ReceiveW(const char *pszName, int iSize, void *pbuf)

@@ -7,6 +7,8 @@
 #include "com_model.h"
 
 #include <vector>
+#include <string>
+#include <utility>
 
 class CPartRainDrop;
 class CPartWind;
@@ -172,13 +174,35 @@ private:
 	float m_fWindChangeTimeMin = 15.0f;
 	float m_fWindChangeTimeMax = 30.0f;
 
-	// CZ:DS: grass settings of the map (GrassInfo) - received and kept; the grass itself is not drawn yet
-	// (the original places it on surfaces of material type 'A' from materials/*.mat, which we do not read)
+	// CZ:DS: grass like the original CEnvironment (GrassInfo + materials/*.mat type "grass" = material 'A')
 	char m_szGrassSpriteName[256] = "";
 	float m_fGrassFadeDist = 0;
 	float m_fGrassMinHeight = 0;
 	float m_fGrassMaxHeight = 0;
 	int m_iGrassDensity = 0;
+	int m_iGrassRingCount = 0;       // pieces per 50-unit move (the original overwrites m_iGrassDensity with it)
+	bool m_bGrassActive = false;
+	bool m_bPlaceInitialGrass = true;
+	bool m_bGrassPlaced = false;     // SetupGrass done since the last Reset (level load)
+	Vector m_vecGrassOrigin;
+	float m_flGrassTime = 0;
+	model_t* m_pGrassSprite1 = nullptr;
+	model_t* m_pGrassSprite2 = nullptr;
+	std::vector<std::string> m_grassTextures; // lower case, prefix stripped (CMaterialSystem::FixTextureName)
+
+	void SetupGrass();
+	void LoadGrassMaterials(const char* path, std::vector<std::pair<std::string, bool>>& list);
+	bool IsGrassTexture(const char* texture) const;
+	bool TraceGrassSpot(float x, float y, float z, Vector& hit);
+	void CreateGrassPiece(const Vector& origin, const Vector& angles, float size);
+	void PlaceGrassSquare(float halfSize, int count);
+	void PlaceGrass(float innerRadius, float outerRadius, int count, const Vector& oldOrigin);
+	void UpdateGrass();
+
+public:
+	Vector m_vecCameraForward;
+	int m_iGrassCount = 0;
+	float GetGrassFadeDist() const { return m_fGrassFadeDist; }
 
 	std::vector<RainData> m_rains;
 	std::vector<SnowData> m_snows;
