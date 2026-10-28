@@ -1,6 +1,9 @@
 #include <cmath>
 #include <cstdint>
 #include <algorithm>
+#include <cctype>
+#include <cstring>
+#include <cstdio>
 
 #include "environment.h"
 
@@ -1682,6 +1685,17 @@ void CGrassPiece::Think( float flTime )
 	CBaseParticle::Think( flTime );
 }
 
+// case-insensitive compare that works the same on every platform (strcasecmp is not there on Windows)
+static int Grass_StrICmp( const char *a, const char *b )
+{
+	for( ;; a++, b++ )
+	{
+		const int ca = tolower( (unsigned char)*a ), cb = tolower( (unsigned char)*b );
+		if( ca != cb || !ca )
+			return ca - cb;
+	}
+}
+
 // CMaterialSystem::FixTextureName: "+0name"/"-0name" -> skip 2, then '{', '~', ' ', '!' -> skip 1
 static std::string Grass_FixTextureName( const char *name )
 {
@@ -1713,19 +1727,19 @@ void CEnvironment::LoadGrassMaterials( const char *path, std::vector<std::pair<s
 	std::string texture;
 	while( ( p = gEngfuncs.COM_ParseFile( p, token ) ) != nullptr )
 	{
-		if( !strcasecmp( token, "texture" ) )
+		if( !Grass_StrICmp( token, "texture" ) )
 		{
 			p = gEngfuncs.COM_ParseFile( p, token );
 			if( !p )
 				break;
 			texture = Grass_FixTextureName( token );
 		}
-		else if( !strcasecmp( token, "type" ) && !texture.empty() )
+		else if( !Grass_StrICmp( token, "type" ) && !texture.empty() )
 		{
 			p = gEngfuncs.COM_ParseFile( p, token );
 			if( !p )
 				break;
-			const bool grass = !strcasecmp( token, "grass" );
+			const bool grass = !Grass_StrICmp( token, "grass" );
 			bool found = false;
 			for( auto &e : list )
 			{
