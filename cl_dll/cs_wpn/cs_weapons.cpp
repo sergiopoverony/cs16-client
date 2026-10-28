@@ -1162,7 +1162,9 @@ void HUD_WeaponsPostThink( local_state_s *from, local_state_s *to, usercmd_t *cm
 	}
 
 	// We are not predicting the current weapon, just bow out here.
-	if ( !pWeapon )
+	// CZ:DS: the weapons are not prepared for prediction (HUD_InitClientWeapons skips them), they have no owner:
+	// running ItemPostFrame on them crashed the game (m_pPlayer == NULL, seen on cz_recoil start with the M4A1)
+	if ( !pWeapon || !pWeapon->m_pPlayer )
 		return;
 
 	for ( i = 0; i < MAX_WEAPONS; i++ )
