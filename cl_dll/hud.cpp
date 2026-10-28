@@ -289,6 +289,26 @@ int __MsgFunc_GrassInfo(const char *pszName, int iSize, void *pbuf)
 	return g_Environment.MsgFunc_GrassInfo( pszName, iSize, pbuf );
 }
 
+// CZ:DS music from trigger_cdaudio. Xash pauses a background track for good if it was started while the
+// loading screen (menu) was up: S_StartBackgroundTrack stores source = key_menu and S_StreamBackgroundTrack
+// never plays such a track in the game (cz_recoil intro music stayed silent, test 30.10). The server sends
+// "cz_music <intro> <loop>"; the client keeps it and starts it once the game view is really drawn.
+char g_szCzMusic[2][260];
+bool g_bCzMusicPending = false;
+float g_flCzMusicAt = 0.0f;
+
+static void __CmdFunc_CzMusic( void )
+{
+	if( gEngfuncs.Cmd_Argc() < 2 )
+		return;
+	strncpy( g_szCzMusic[0], gEngfuncs.Cmd_Argv( 1 ), sizeof( g_szCzMusic[0] ) - 1 );
+	g_szCzMusic[0][sizeof( g_szCzMusic[0] ) - 1] = 0;
+	strncpy( g_szCzMusic[1], gEngfuncs.Cmd_Argc() > 2 ? gEngfuncs.Cmd_Argv( 2 ) : "*", sizeof( g_szCzMusic[1] ) - 1 );
+	g_szCzMusic[1][sizeof( g_szCzMusic[1] ) - 1] = 0;
+	g_bCzMusicPending = true;
+	g_flCzMusicAt = 0.0f;
+}
+
 // This is called every time the DLL is loaded
 void CHud :: Init( void )
 {
@@ -296,6 +316,7 @@ void CHud :: Init( void )
 
 	HOOK_COMMAND_FUNC( "special", __CmdFunc_InputCommandSpecial, );
 	HOOK_COMMAND_FUNC( "gunsmoke", __CmdFunc_GunSmoke, );
+	HOOK_COMMAND_FUNC( "cz_music", __CmdFunc_CzMusic, );
 
 #ifdef __ANDROID__
 	HOOK_COMMAND_FUNC( "evdev_mouseopen", __CmdFunc_MouseSucksOpen );

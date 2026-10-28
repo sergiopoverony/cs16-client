@@ -98,6 +98,25 @@ int CHud :: Redraw( float flTime, int intermission )
 		m_flShotTime = 0;
 	}
 
+	{
+		// CZ:DS music queued by "cz_music" (hud.cpp): start it 0.3 s after the game view is drawn
+		extern char g_szCzMusic[2][260];
+		extern bool g_bCzMusicPending;
+		extern float g_flCzMusicAt;
+		if( g_bCzMusicPending )
+		{
+			if( g_flCzMusicAt <= 0.0f || g_flCzMusicAt > flTime + 5.0f )
+				g_flCzMusicAt = flTime + 0.3f;
+			else if( flTime >= g_flCzMusicAt )
+			{
+				char cmd[600];
+				snprintf( cmd, sizeof( cmd ), "music \"%s\" \"%s\"\n", g_szCzMusic[0], g_szCzMusic[1] );
+				gEngfuncs.pfnClientCmd( cmd );
+				g_bCzMusicPending = false;
+			}
+		}
+	}
+
 	m_iIntermission = intermission;
 
 	UpdateDefaultHUDColor();

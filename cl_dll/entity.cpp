@@ -72,6 +72,24 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 		}
 		break;
 	case ET_BEAM:
+		// CZ:DS sniper laser (server: BEAM_ENTPOINT, red laserbeam.spr, start = point on the player's chest, end =
+		// attachment 2 of the sniper). The server point comes with the server frames and jumps behind the moving
+		// player ("the beam twitches, looks like two beams", test 30.10): put the start on the local player's
+		// own (predicted) position every frame instead.
+		if( modelname && strstr( modelname, "laserbeam" ) && ( ent->curstate.rendermode & 0x0F ) == 1 /* BEAM_ENTPOINT */
+			&& !ent->curstate.sequence && ent->curstate.skin && ent->curstate.rendercolor.r == 255
+			&& !ent->curstate.rendercolor.g && !ent->curstate.rendercolor.b )
+		{
+			cl_entity_t *local = gEngfuncs.GetLocalPlayer();
+			if( local )
+			{
+				Vector chest = local->origin;
+				chest.z += 8.0f;
+				if( ( chest - Vector( ent->origin ) ).Length() < 96.0f ) // only a beam aimed at us
+					VectorCopy( chest, ent->origin );
+			}
+		}
+		break;
 	case ET_TEMPENTITY:
 	case ET_FRAGMENTED:
 	default:
