@@ -817,11 +817,12 @@ void CEnvironment::UpdateWind()
 {
 	if( m_flNextWindChangeTime <= gEngfuncs.GetClientTime() )
 	{
-		m_vecDesiredWindDirection.x = Com_RandomFloat( -80.0f, 80.0f );
-		m_vecDesiredWindDirection.y = Com_RandomFloat( -80.0f, 80.0f );
+		// CZ:DS: the limits come from the map (WindInfo), defaults -80..80 and 15..30 s like the original
+		m_vecDesiredWindDirection.x = Com_RandomFloat( m_fWindDirectionMinX, m_fWindDirectionMaxX );
+		m_vecDesiredWindDirection.y = Com_RandomFloat( m_fWindDirectionMinY, m_fWindDirectionMaxY );
 		m_vecDesiredWindDirection.z = 0;
 
-		m_flNextWindChangeTime = gEngfuncs.GetClientTime() + Com_RandomFloat( 15.0f, 30.0f );
+		m_flNextWindChangeTime = gEngfuncs.GetClientTime() + Com_RandomFloat( m_fWindChangeTimeMin, m_fWindChangeTimeMax );
 
 		m_flDesiredWindSpeed = m_vecDesiredWindDirection.Length();
 		Vector vecDir = m_vecDesiredWindDirection.Normalize();
@@ -1592,6 +1593,35 @@ int CEnvironment::MsgFunc_WeatherPos(const char *pszName, int iSize, void *pbuf)
 		}
 	}
 
+	return 1;
+}
+
+// CZ:DS: wind limits of the map (original CHudHealth::MsgFunc_WindInfo): 6 coords
+int CEnvironment::MsgFunc_WindInfo(const char *pszName, int iSize, void *pbuf)
+{
+	BufferReader reader(pszName, pbuf, iSize);
+	m_fWindDirectionMinX = reader.ReadCoord();
+	m_fWindDirectionMaxX = reader.ReadCoord();
+	m_fWindDirectionMinY = reader.ReadCoord();
+	m_fWindDirectionMaxY = reader.ReadCoord();
+	m_fWindChangeTimeMin = reader.ReadCoord();
+	m_fWindChangeTimeMax = reader.ReadCoord();
+	m_flNextWindChangeTime = 0; // pick a new wind with the new limits
+	return 1;
+}
+
+// CZ:DS: grass settings of the map (original CHudHealth::MsgFunc_GrassInfo); kept for the grass that is not drawn yet
+int CEnvironment::MsgFunc_GrassInfo(const char *pszName, int iSize, void *pbuf)
+{
+	BufferReader reader(pszName, pbuf, iSize);
+	strncpy(m_szGrassSpriteName, reader.ReadString(), sizeof(m_szGrassSpriteName) - 1);
+	m_szGrassSpriteName[sizeof(m_szGrassSpriteName) - 1] = 0;
+	m_fGrassFadeDist = reader.ReadCoord();
+	m_fGrassMinHeight = reader.ReadCoord();
+	m_fGrassMaxHeight = reader.ReadCoord();
+	m_iGrassDensity = reader.ReadLong();
+	if (m_fGrassMinHeight > m_fGrassMaxHeight)
+		m_fGrassMaxHeight = m_fGrassMinHeight;
 	return 1;
 }
 

@@ -278,6 +278,17 @@ int __MsgFunc_ReceiveW(const char *pszName, int iSize, void *pbuf)
 	return g_Environment.MsgFunc_ReceiveW( pszName, iSize, pbuf );
 }
 
+// CZ:DS: wind / grass settings of the map (original CHudHealth::MsgFunc_WindInfo / MsgFunc_GrassInfo)
+int __MsgFunc_WindInfo(const char *pszName, int iSize, void *pbuf)
+{
+	return g_Environment.MsgFunc_WindInfo( pszName, iSize, pbuf );
+}
+
+int __MsgFunc_GrassInfo(const char *pszName, int iSize, void *pbuf)
+{
+	return g_Environment.MsgFunc_GrassInfo( pszName, iSize, pbuf );
+}
+
 // This is called every time the DLL is loaded
 void CHud :: Init( void )
 {
@@ -313,6 +324,8 @@ void CHud :: Init( void )
 	gEngfuncs.pfnHookUserMsg( "Snow", __MsgFunc_Snow );
 	gEngfuncs.pfnHookUserMsg( "WeatherPos", __MsgFunc_WeatherPos );
 	gEngfuncs.pfnHookUserMsg( "ReceiveW", __MsgFunc_ReceiveW );
+	gEngfuncs.pfnHookUserMsg( "WindInfo", __MsgFunc_WindInfo );
+	gEngfuncs.pfnHookUserMsg( "GrassInfo", __MsgFunc_GrassInfo );
 
 	CVAR_CREATE( "_vgui_menus", "1", FCVAR_ARCHIVE | FCVAR_USERINFO );
 	CVAR_CREATE( "_cl_autowepswitch", "1", FCVAR_ARCHIVE | FCVAR_USERINFO );

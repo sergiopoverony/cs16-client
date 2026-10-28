@@ -122,6 +122,8 @@ public:
 	int MsgFunc_Snow(const char *pszName, int iSize, void *pbuf);
 	int MsgFunc_WeatherPos(const char *pszName, int iSize, void *pbuf);
 	int MsgFunc_ReceiveW(const char *pszName, int iSize, void *pbuf);
+	int MsgFunc_WindInfo(const char *pszName, int iSize, void *pbuf);
+	int MsgFunc_GrassInfo(const char *pszName, int iSize, void *pbuf);
 
 private:
 	void RemoveRain(int entIndex);
@@ -161,6 +163,22 @@ private:
 
 	float m_flIdealYaw;
 	float m_flWeatherValue;
+
+	// CZ:DS: wind limits of the map (WindInfo); defaults are the original CEnvironment::Initialize values
+	float m_fWindDirectionMinX = -80.0f;
+	float m_fWindDirectionMaxX = 80.0f;
+	float m_fWindDirectionMinY = -80.0f;
+	float m_fWindDirectionMaxY = 80.0f;
+	float m_fWindChangeTimeMin = 15.0f;
+	float m_fWindChangeTimeMax = 30.0f;
+
+	// CZ:DS: grass settings of the map (GrassInfo) - received and kept; the grass itself is not drawn yet
+	// (the original places it on surfaces of material type 'A' from materials/*.mat, which we do not read)
+	char m_szGrassSpriteName[256] = "";
+	float m_fGrassFadeDist = 0;
+	float m_fGrassMinHeight = 0;
+	float m_fGrassMaxHeight = 0;
+	int m_iGrassDensity = 0;
 
 	std::vector<RainData> m_rains;
 	std::vector<SnowData> m_snows;
