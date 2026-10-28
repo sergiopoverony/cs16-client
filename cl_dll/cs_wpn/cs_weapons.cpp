@@ -1013,6 +1013,20 @@ void HUD_WeaponsPostThink( local_state_s *from, local_state_s *to, usercmd_t *cm
 
 	HUD_InitClientWeapons();
 
+	// CZ:DS: the weapons are not predicted on the client, so cl_lw must stay 0 - otherwise the server does not
+	// send the weapon animations either. config.cfg runs after the client init and brought cl_lw 1 back.
+	if ( gHUD.GetGameType() == GAME_CZERODS )
+	{
+		static cvar_t *s_cl_lw = nullptr;
+		if ( !s_cl_lw )
+			s_cl_lw = gEngfuncs.pfnGetCvarPointer( "cl_lw" );
+		if ( s_cl_lw && s_cl_lw->value != 0.0f )
+		{
+			gEngfuncs.Cvar_SetValue( "cl_lw", 0 );
+			gEngfuncs.Con_DPrintf( "CZ:DS: cl_lw forced to 0 (no client weapon prediction)\n" );
+		}
+	}
+
 	// Get current clock
 	gpGlobals->time = time;
 
