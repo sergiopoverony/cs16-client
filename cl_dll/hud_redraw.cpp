@@ -103,15 +103,21 @@ int CHud :: Redraw( float flTime, int intermission )
 		extern char g_szCzMusic[2][260];
 		extern bool g_bCzMusicPending;
 		extern float g_flCzMusicAt;
+		extern float g_flCzMapDrawn;
+		if( g_flCzMapDrawn <= 0.0f || g_flCzMapDrawn > flTime )
+			g_flCzMapDrawn = flTime;
 		if( g_bCzMusicPending )
 		{
-			if( g_flCzMusicAt <= 0.0f || g_flCzMusicAt > flTime + 5.0f )
-				g_flCzMusicAt = flTime + 0.3f;
+			// the first seconds of a map the loading dialog (menu) may still be up: a track started then is
+			// kept paused by Xash for good -> wait 3 s of drawn game after the map start, 0.3 s otherwise
+			if( g_flCzMusicAt <= 0.0f || g_flCzMusicAt > flTime + 10.0f )
+				g_flCzMusicAt = ( flTime + 0.3f > g_flCzMapDrawn + 3.0f ) ? flTime + 0.3f : g_flCzMapDrawn + 3.0f;
 			else if( flTime >= g_flCzMusicAt )
 			{
 				char cmd[600];
 				snprintf( cmd, sizeof( cmd ), "music \"%s\" \"%s\"\n", g_szCzMusic[0], g_szCzMusic[1] );
 				gEngfuncs.pfnClientCmd( cmd );
+				gEngfuncs.Con_Printf( "cz_music: start at %.2f (map drawn since %.2f)\n", flTime, g_flCzMapDrawn );
 				g_bCzMusicPending = false;
 			}
 		}

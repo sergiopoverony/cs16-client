@@ -296,6 +296,7 @@ int __MsgFunc_GrassInfo(const char *pszName, int iSize, void *pbuf)
 char g_szCzMusic[2][260];
 bool g_bCzMusicPending = false;
 float g_flCzMusicAt = 0.0f;
+float g_flCzMapDrawn = 0.0f; // first HUD redraw of this map (reset in VidInit)
 
 static void __CmdFunc_CzMusic( void )
 {
@@ -307,6 +308,7 @@ static void __CmdFunc_CzMusic( void )
 	g_szCzMusic[1][sizeof( g_szCzMusic[1] ) - 1] = 0;
 	g_bCzMusicPending = true;
 	g_flCzMusicAt = 0.0f;
+	gEngfuncs.Con_Printf( "cz_music: got '%s' '%s'\n", g_szCzMusic[0], g_szCzMusic[1] );
 }
 
 // This is called every time the DLL is loaded
@@ -492,6 +494,7 @@ CHud :: ~CHud()
 
 void CHud :: VidInit( void )
 {
+	g_flCzMapDrawn = 0.0f;
 	static bool firstinit = true;
 	m_scrinfo.iSize = sizeof( m_scrinfo );
 	GetScreenInfo( &m_scrinfo );
