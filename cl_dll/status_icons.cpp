@@ -56,14 +56,13 @@ int CHudStatusIcons::VidInit( void )
 int g_czTool = 0;
 static int   g_czCount = 0, g_czHold = 0;
 static float g_czPlateT = 0;
-static float g_czResetAt = -100.0f; // CzTool in the first 2 s after a HUD reset = the state of a loaded game, not a pickup
 static int   g_czZoneShown = 0;
 int g_czFiber = 0;
 static int   g_czZoom = 0;
 
 void CHudStatusIcons::Reset( void )
 {
-	g_czTool = 0; g_czFiber = 0; g_czZoom = 0; g_czZoneShown = 0; g_czPlateT = 0; g_czResetAt = gEngfuncs.GetClientTime();
+	g_czTool = 0; g_czFiber = 0; g_czZoom = 0; g_czZoneShown = 0; g_czPlateT = 0;
 	memset( m_IconList, 0, sizeof m_IconList );
 	m_iFlags &= ~HUD_DRAW;
 }
@@ -78,10 +77,11 @@ int CHudStatusIcons::MsgFunc_CzTool( const char *pszName, int iSize, void *pbuf 
 	int tool = reader.ReadByte();
 	g_czCount = reader.ReadByte();
 	g_czHold = reader.ReadByte();
-	// the "EQUIPMENT" plate only for a real change of the tool, not when a load / level change sends the
-	// tool the player already had (test 30.10: the plate popped up in a corridor after loading the autosave)
-	float now = gEngfuncs.GetClientTime();
-	if( tool != g_czTool && tool && !( now >= g_czResetAt && now < g_czResetAt + 2.0f ))
+	// the "EQUIPMENT" plate only when the server says the tool was just picked up / given; a load, a HUD
+	// reset or a resend carries the tool the player already had (tests 30.10: the plate popped up after
+	// loading the autosave and on picking up ammo)
+	int announce = reader.ReadByte();
+	if( announce && tool && tool != g_czTool )
 		g_czPlateT = gHUD.m_flTime + 3.0f;
 	g_czTool = tool;
 	m_iFlags |= HUD_DRAW;
