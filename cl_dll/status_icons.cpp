@@ -311,13 +311,15 @@ int CHudStatusIcons::MsgFunc_HudIcons( const char *pszName, int iSize, void *pbu
 		// bomb room: only the defuse kit icon, the radio icon goes away
 		if( ( shown & icons[k].bit ) && !( icons[k].bit == 16 && ( shown & 512 )))
 		{
-			// tools: green while the player is inside their zone, red otherwise
+			// tools: green while the player is inside their zone, orange when owned outside it (original CHudIcons::Draw)
 			if( icons[k].bit == 1 )
 				EnableIcon( icons[k].name, 160, 160, 160 ); // stealth: colourless grey
 			else if( ( ( active & icons[k].bit ) && ( owned & icons[k].bit ) ) || icons[k].bit == 512 || icons[k].bit == 1024 )
 				EnableIcon( icons[k].name, 50, 250, 50 );
+			else if( ( active | owned ) & icons[k].bit )
+				EnableIcon( icons[k].name, 255, 128, 0 ); // original CHudIcons::Draw: tool owned but not in its zone (or the other way round) = orange
 			else
-				EnableIcon( icons[k].name, 250, 60, 60 );
+				EnableIcon( icons[k].name, 255, 0, 0 );
 			m_iFlags |= HUD_DRAW;
 		}
 		else
