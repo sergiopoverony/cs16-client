@@ -27,8 +27,12 @@
 */
 #include "events.h"
 
-// TODO: Implement. Used in CS:CZDS
+void EV_GrenadeExplosion( event_args_t *args );
+
+// CZ:DS env_explosion with "poison" (iparam2 = 2): the original client plays the explosion sounds and
+// throws a ring of smoke; drawn here like a grenade blast
 void EV_CreateExplo(event_args_s *args)
 {
-	gEngfuncs.Con_DPrintf("^3EXPUROSION !!!111");
+	if( args->iparam2 == 2 )
+		EV_GrenadeExplosion( args );
 }

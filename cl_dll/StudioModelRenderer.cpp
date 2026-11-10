@@ -381,7 +381,41 @@ void CStudioModelRenderer::StudioSetUpTransform(int trivial_accept)
 	angles[PITCH] = m_pCurrentEntity->curstate.angles[PITCH];
 	angles[YAW] = m_pCurrentEntity->curstate.angles[YAW];
 
-	if (m_pCurrentEntity->curstate.movetype != MOVETYPE_NONE)
+	if (m_pCurrentEntity->curstate.movetype == MOVETYPE_STEP)
+	{
+		// monsters of CZ:DS: the server moves them 10 times a second, the Half-Life
+		// client interpolates them here (the Counter-Strike one dropped it, they walked in jerks)
+		float f = 0;
+
+		// don't do it if the animtime hasn't updated in a while
+		if ((m_clTime < m_pCurrentEntity->curstate.animtime + 1.0f) &&
+			(m_pCurrentEntity->curstate.animtime != m_pCurrentEntity->latched.prevanimtime))
+		{
+			f = (m_clTime - m_pCurrentEntity->curstate.animtime) / (m_pCurrentEntity->curstate.animtime - m_pCurrentEntity->latched.prevanimtime);
+		}
+
+		// current is reached 0.1 seconds after being set
+		if (m_fDoInterp)
+			f = f - 1.0f;
+		else
+			f = 0;
+
+		for (i = 0; i < 3; i++)
+			modelpos[i] += (m_pCurrentEntity->origin[i] - m_pCurrentEntity->latched.prevorigin[i]) * f;
+
+		for (i = 0; i < 3; i++)
+		{
+			float d = m_pCurrentEntity->angles[i] - m_pCurrentEntity->latched.prevangles[i];
+
+			if (d > 180)
+				d -= 360;
+			else if (d < -180)
+				d += 360;
+
+			angles[i] += d * f;
+		}
+	}
+	else if (m_pCurrentEntity->curstate.movetype != MOVETYPE_NONE)
 	{
 		VectorCopy(m_pCurrentEntity->angles, angles);
 	}

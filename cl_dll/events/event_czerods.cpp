@@ -28,6 +28,7 @@
 *
 */
 #include "events.h"
+#include "com_model.h"
 
 void EV_FireM60( event_args_t *args )
 {
@@ -197,7 +198,129 @@ void EV_CreateGlass( event_args_t *args )
 {
 
 }
+// CZ:DS explosions. The original client draws them with particleman (fireball sprite, flares, dust and
+// smoke rings, debris of the surface material); this is the same picture with the engine's temp
+// entities: the fireball zerog-frag1 animated at 90 fps, smoke puffs gas_puff_01, a light and the sounds.
+static TEMPENTITY *CZ_ExploSprite( const Vector &origin, const char *name, float size, int rendermode )
+{
+	HSPRITE hspr = SPR_Load( name );
+	const struct model_s *mdl = hspr ? gEngfuncs.GetSpritePointer( hspr ) : NULL;
+
+	if( !mdl )
+	{
+		gEngfuncs.Con_DPrintf( "Couldn't load Sprite: %s\n", name );
+		return NULL;
+	}
+
+	TEMPENTITY *te = gEngfuncs.pEfxAPI->CL_TempEntAlloc( (float *)&origin, (struct model_s *)mdl );
+	if( !te )
+		return NULL;
+
+	// the original sizes are the half width of the sprite quad in world units
+	float width = mdl->maxs[1] - mdl->mins[1];
+	if( width < 1.0f )
+		width = 1.0f;
+
+	te->entity.curstate.scale = size * 2.0f / width;
+	te->entity.curstate.rendermode = rendermode;
+	te->entity.curstate.renderamt = 255;
+	te->entity.curstate.rendercolor.r = 255;
+	te->entity.curstate.rendercolor.g = 255;
+	te->entity.curstate.rendercolor.b = 255;
+	te->entity.baseline.renderamt = 255;
+	te->frameMax = mdl->numframes > 0 ? mdl->numframes - 1 : 0;
+	te->flags &= ~FTENT_NOMODEL;
+
+	return te;
+}
+
+static void CZ_ExploFireball( const Vector &origin )
+{
+	TEMPENTITY *te = CZ_ExploSprite( origin, "sprites/zerog-frag1.spr", 175.0f, kRenderTransAdd );
+	if( !te )
+		return;
+
+	te->flags |= FTENT_SPRANIMATE;
+	te->entity.curstate.framerate = 90;
+	te->entity.curstate.rendercolor.g = 225;
+	te->entity.curstate.rendercolor.b = 225;
+	te->die = gEngfuncs.GetClientTime() + ( te->frameMax + 1 ) / 90.0f;
+}
+
+static void CZ_ExploSmoke( const Vector &origin, const Vector &velocity, float life, int color )
+{
+	TEMPENTITY *te = CZ_ExploSprite( origin, "sprites/gas_puff_01.spr", gEngfuncs.pfnRandomFloat( 140, 180 ) * 0.5f, kRenderTransAlpha );
+	if( !te )
+		return;
+
+	te->flags |= FTENT_FADEOUT | FTENT_COLLIDEWORLD;
+	te->entity.curstate.rendercolor.r = color;
+	te->entity.curstate.rendercolor.g = color;
+	te->entity.curstate.rendercolor.b = color;
+	te->entity.curstate.frame = gEngfuncs.pfnRandomLong( 0, te->frameMax );
+	te->entity.baseline.origin = velocity;
+	te->fadeSpeed = 0.5f;
+	te->die = gEngfuncs.GetClientTime() + life;
+}
+
+static void CZ_ExploSounds( const Vector &origin, bool law )
+{
+	static const char *sounds[] = { "weapons/explode3.wav", "weapons/explode4.wav", "weapons/explode5.wav" };
+
+	// the original plays from the picked one to the last one, all at once
+	for( int i = gEngfuncs.pfnRandomLong( 0, 2 ); i < 3; i++ )
+	{
+		gEngfuncs.pEventAPI->EV_PlaySound( -1, (float *)&origin, CHAN_AUTO,
+			law ? "weapons/law_explode.wav" : sounds[i], 1.0f, ATTN_NORM, 0, PITCH_NORM );
+	}
+}
+
+static void CZ_ExploLight( const Vector &origin )
+{
+	dlight_t *dl = gEngfuncs.pEfxAPI->CL_AllocDlight( 0 );
+	if( !dl )
+		return;
+
+	dl->origin = origin;
+	dl->radius = 300;
+	dl->color.r = 255;
+	dl->color.g = 190;
+	dl->color.b = 40;
+	dl->die = gEngfuncs.GetClientTime() + 1.0f;
+	dl->decay = 275;
+}
+
 void EV_GrenadeExplosion( event_args_t *args )
 {
+	Vector origin( args->origin );
+	Vector forward, right, up;
 
+	CZ_ExploSounds( origin, args->bparam2 != 0 );
+	CZ_ExploLight( origin );
+
+	// the fireball on the ground under the blast
+	pmtrace_t tr;
+	Vector down = origin - Vector( 0, 0, 100 );
+	gEngfuncs.pEventAPI->EV_SetTraceHull( 2 );
+	gEngfuncs.pEventAPI->EV_PlayerTrace( origin, down, PM_NORMAL, -1, &tr );
+	CZ_ExploFireball( tr.fraction < 1.0f ? Vector( tr.endpos ) : origin );
+
+	// the smoke column and the smoke thrown aside
+	for( int i = 0; i < 4; i++ )
+	{
+		Vector angles( 0.0f, i * 45.0f, 0.0f );
+		gEngfuncs.pfnAngleVectors( angles, forward, right, up );
+		float height = gEngfuncs.pfnRandomFloat( 5, 25 );
+		CZ_ExploSmoke( origin + up * height, up * ( 55.0f - height * 2.0f ) * 0.5f, 6.5f, 75 );
+	}
+
+	for( int i = 0; i < 8; i++ )
+	{
+		Vector angles( 0.0f, i * 45.0f, 0.0f );
+		gEngfuncs.pfnAngleVectors( angles, forward, right, up );
+		float rise = gEngfuncs.pfnRandomFloat( 25, 40 ) * i;
+		float speed = gEngfuncs.pfnRandomFloat( 300, 400 );
+		int color = (int)gEngfuncs.pfnRandomFloat( 75, 100 );
+		CZ_ExploSmoke( origin + up * ( 5.0f * i ), ( forward * speed + up * rise ) * 0.2f, 6.0f, color );
+	}
 }

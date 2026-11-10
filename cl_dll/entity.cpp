@@ -55,6 +55,11 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 		// czeror diagnostics: lightmultiplier props (renderfx 25): does iuser4 (the multiplier) reach the client?
 		if( ent->curstate.renderfx == 21 /* kRenderFxLightMultiplier */ )
 		{
+			// a zero multiplier makes the engine draw the model black (test 11.11: monsters of
+			// monstermakers in cz_recoil2); no multiplier is meant then
+			if( ent->curstate.iuser4 <= 0 )
+				ent->curstate.iuser4 = 10;
+
 			// iuser4 comes with the delta (czeror delta.lst: 8 bits); no renderamt fallback any more
 			static unsigned char seen[4096];
 			if( ent->index > 0 && ent->index < 4096 && !seen[ent->index] )
