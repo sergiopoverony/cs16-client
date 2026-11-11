@@ -15,6 +15,7 @@ took iuser1 for spectator mode and flew the view to the world origin.
 #include "parsemsg.h"
 #include "ref_params.h"
 #include "com_model.h"
+#include "triangleapi.h"
 #include "cz_fibercamera.h"
 
 #include <string.h>
@@ -163,8 +164,13 @@ void CzFiber_Draw( float flTime )
 
 	if( g_czFiber.noise )
 	{
+		// GoldSrc blends it with the given factors (1, 1 = GL_ONE, GL_ONE: added to
+		// the picture). Xash ignores them and draws in the last render mode, after
+		// SPR_DrawHoles that is the opaque one, so the noise hid the room.
+		gEngfuncs.pTriAPI->RenderMode( kRenderTransAdd );
 		SPR_Set( g_czFiber.noise, 255, 0, 0 );
 		gEngfuncs.pfnSPR_DrawGeneric( (int)( flTime * 20 ) % 16, 0, 0, NULL, 1, 1, ScreenWidth, ScreenHeight );
+		gEngfuncs.pTriAPI->RenderMode( kRenderNormal );
 	}
 
 	int centerX = ScreenWidth / 2;
