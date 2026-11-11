@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "draw_util.h"
+#include "cz_fibercamera.h"
 
 #define MAX_LOGO_FRAMES 56
 
@@ -126,6 +127,9 @@ int CHud :: Redraw( float flTime, int intermission )
 	m_iIntermission = intermission;
 
 	UpdateDefaultHUDColor();
+
+	// CZ:DS fiber optic camera: noise and the lens frame over the picture, under the HUD
+	CzFiber_Draw( flTime );
 
 	if ( m_pCvarDraw->value && (intermission || !(m_iHideHUDDisplay & HIDEHUD_ALL) ) )
 	{

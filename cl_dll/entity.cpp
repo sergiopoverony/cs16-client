@@ -26,6 +26,7 @@
 #include "ev_hldm.h"
 #include "particleman.h"
 #include "particleman_internal.h"
+#include "cz_fibercamera.h"
 
 extern vec3_t v_origin;
 
@@ -215,6 +216,10 @@ void DLLEXPORT HUD_ProcessPlayerState( struct entity_state_s *dst, const struct 
 
 		dst->iuser1 = g_iUser1 = src->iuser1;
 		dst->iuser2 = g_iUser2 = src->iuser2;
+
+		// CZ:DS cameras set OBS_CHASE_FREE on the player; that's not spectating here
+		if( CzFiber_IsOn() )
+			g_iUser1 = g_iUser2 = 0;
 		dst->iuser3 = g_iUser3 = src->iuser3;
 	}
 	dst->fuser2					= src->fuser2;

@@ -34,6 +34,7 @@
 #include "kbutton.h"
 #include "input.h"
 #include "com_weapons.h"
+#include "cz_fibercamera.h"
 
 #ifndef M_PI
 #define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
@@ -1860,6 +1861,10 @@ void DLLEXPORT V_CalcRefdef( struct ref_params_s *pparams )
 	if ( pparams->intermission )
 	{
 		V_CalcIntermissionRefdef ( pparams );
+	}
+	else if ( CzFiber_CalcRefdef( pparams ) )
+	{
+		// CZ:DS fiber optic camera / info_camera
 	}
 	else if ( g_iUser1 )	// g_iUser true if in spectator mode
 	{

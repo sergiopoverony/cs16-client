@@ -35,6 +35,7 @@
 #include "camera.h"
 
 #include "draw_util.h"
+#include "cz_fibercamera.h"
 
 #if _WIN32
 #define strncasecmp _strnicmp
@@ -319,6 +320,7 @@ void CHud :: Init( void )
 	HOOK_COMMAND_FUNC( "special", __CmdFunc_InputCommandSpecial, );
 	HOOK_COMMAND_FUNC( "gunsmoke", __CmdFunc_GunSmoke, );
 	HOOK_COMMAND_FUNC( "cz_music", __CmdFunc_CzMusic, );
+	CzFiber_Init();
 
 #ifdef __ANDROID__
 	HOOK_COMMAND_FUNC( "evdev_mouseopen", __CmdFunc_MouseSucksOpen );
@@ -494,6 +496,8 @@ CHud :: ~CHud()
 
 void CHud :: VidInit( void )
 {
+	CzFiber_VidInit();
+
 	g_flCzMapDrawn = 0.0f;
 	static bool firstinit = true;
 	m_scrinfo.iSize = sizeof( m_scrinfo );
