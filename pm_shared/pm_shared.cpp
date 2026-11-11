@@ -2898,7 +2898,7 @@ void PM_PlayerMove(qboolean server)
 	// pm_shared.c there), the prediction has to do the same
 	if( pmove->onground != -1 && ( pmove->cmd.buttons & IN_USE ))
 	{
-		float scale = 1.0f - 0.7f * pmove->frametime * 100.0f;
+		float scale = 1.0f - 0.35f * pmove->frametime * 100.0f;
 		if( scale < 0.0f )
 			scale = 0.0f;
 		VectorScale( pmove->velocity, scale, pmove->velocity );
