@@ -2894,6 +2894,16 @@ void PM_PlayerMove(qboolean server)
 		}
 	}
 
+	// czeror: the server slows a player who holds USE (same formula as the server, see
+	// pm_shared.c there), the prediction has to do the same
+	if( pmove->onground != -1 && ( pmove->cmd.buttons & IN_USE ))
+	{
+		float scale = 1.0f - 0.7f * pmove->frametime * 100.0f;
+		if( scale < 0.0f )
+			scale = 0.0f;
+		VectorScale( pmove->velocity, scale, pmove->velocity );
+	}
+
 	// Handle movement
 	switch (pmove->movetype)
 	{
