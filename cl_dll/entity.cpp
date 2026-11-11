@@ -27,6 +27,7 @@
 #include "particleman.h"
 #include "particleman_internal.h"
 #include "cz_fibercamera.h"
+#include "triangleapi.h"
 
 extern vec3_t v_origin;
 
@@ -81,6 +82,18 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 			{
 				seen[ent->index] = 1;
 				gEngfuncs.Con_DPrintf( "lightmul: ent %d %s iuser4=%d\n", ent->index, modelname ? modelname : "?", ent->curstate.iuser4 );
+
+				// the light the engine reads for the model (it looks 8 units above the origin and traces down):
+				// black props in cz_silo02 (generator, pipes)
+				if( !monster && modelname && ( strstr( modelname, "generator" ) || strstr( modelname, "pipe" ) || strstr( modelname, "conduit" )))
+				{
+					vec3_t pos, light = { 0, 0, 0 };
+					VectorCopy( ent->origin, pos );
+					pos[2] += 8.0f;
+					gEngfuncs.pTriAPI->LightAtPoint( pos, light );
+					gEngfuncs.Con_Printf( "lightprop: ent %d %s origin %.0f %.0f %.0f body %d light at origin+8: %.0f %.0f %.0f\n", ent->index, modelname,
+						ent->origin[0], ent->origin[1], ent->origin[2], ent->curstate.body, light[0], light[1], light[2] );
+				}
 			}
 		}
 		// fall through
