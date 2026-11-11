@@ -1690,6 +1690,62 @@ void CHudAmmo::DrawCrosshair( int weaponId )
 	}
 }
 
+// czeror: the CZ:DS server numbers its weapons in another order than Counter-Strike
+// (dlls/weapons.h of czeror) and its accessories apart. The crosshair code knows the
+// Counter-Strike numbers (WeaponIdType), so the CZ number is turned into it first,
+// otherwise the shotgun (CZ 3 = CS scout) had no crosshair, the AWP (CZ 13 = CS
+// SG550) had one and so on. The tools (radio, cameras, ...) get the plain one.
+static int CZ_CrosshairWeaponId( const WEAPON *p )
+{
+	static const int weapons[] =
+	{
+		WEAPON_NONE,
+		WEAPON_P228,		// 1
+		WEAPON_SCOUT,		// 2
+		WEAPON_XM1014,		// 3
+		WEAPON_MAC10,		// 4
+		WEAPON_AUG,		// 5
+		WEAPON_ELITE,		// 6
+		WEAPON_FIVESEVEN,	// 7
+		WEAPON_UMP45,		// 8
+		WEAPON_SG550,		// 9
+		WEAPON_USP,		// 10
+		WEAPON_GLOCK18,		// 11
+		WEAPON_MP5N,		// 12
+		WEAPON_AWP,		// 13
+		WEAPON_M249,		// 14
+		WEAPON_M3,		// 15
+		WEAPON_M4A1,		// 16
+		WEAPON_TMP,		// 17
+		WEAPON_G3SG1,		// 18
+		WEAPON_DEAGLE,		// 19
+		WEAPON_SG552,		// 20
+		WEAPON_AK47,		// 21
+		WEAPON_P90,		// 22
+		WEAPON_M249,		// 23 M60, a machine gun like the M249
+		WEAPON_FAMAS,		// 24
+		WEAPON_GALIL,		// 25
+	};
+
+	if( p->iAccessory )
+	{
+		switch( p->iId )
+		{
+		case 4: return WEAPON_FLASHBANG;
+		case 5: return WEAPON_HEGRENADE;
+		case 6: return WEAPON_C4;
+		case 7: return WEAPON_SMOKEGRENADE;
+		case 9: return WEAPON_KNIFE;
+		default: return WEAPON_SHIELDGUN; // no Counter-Strike weapon: the plain crosshair
+		}
+	}
+
+	if( p->iId > 0 && p->iId < (int)( sizeof( weapons ) / sizeof( weapons[0] )))
+		return weapons[p->iId];
+
+	return WEAPON_SHIELDGUN;
+}
+
 void CHudAmmo::DrawCrosshair()
 {
 	if( g_iUser1 && g_iUser1 != OBS_IN_EYE )
@@ -1702,6 +1758,8 @@ void CHudAmmo::DrawCrosshair()
 		return;
 
 	weaponid = m_pWeapon->iId;
+	if( gHUD.GetGameType() == GAME_CZERODS )
+		weaponid = CZ_CrosshairWeaponId( m_pWeapon );
 
 	if ( weaponid == WEAPON_AWP
 	     || weaponid == WEAPON_SCOUT
