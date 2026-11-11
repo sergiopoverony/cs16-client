@@ -38,6 +38,7 @@ extern engine_studio_api_t IEngineStudio;
 #include "draw_util.h"
 #include "triangleapi.h"
 #include "weapontype.h"
+#include "cz_fibercamera.h"
 
 #ifndef M_PI
 #define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
@@ -1145,7 +1146,11 @@ int CHudAmmo::Draw(float flTime)
 	}
 
 	// place it here, so pretty dynamic crosshair will work even in spectator!
-	if( gHUD.m_iFOV > 40 )
+	// czeror: the fiber optic camera has its own sight in the lens frame, no HUD crosshair over it
+	if( gHUD.GetGameType() == GAME_CZERODS && CzFiber_IsOn() )
+	{
+	}
+	else if( gHUD.m_iFOV > 40 )
 	{
 		// draw a dynamic crosshair
 		if( !( gHUD.m_iHideHUDDisplay & HIDEHUD_CROSSHAIR ) )
