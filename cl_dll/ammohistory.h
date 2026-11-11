@@ -19,11 +19,23 @@
 // this is the max number of items in each bucket
 #define MAX_WEAPON_POSITIONS		22
 
+// czeror: the weapons and the accessories (knife, grenades, radio, tools) are
+// numbered separately, both from 1. As on the server (ItemInfoArray), the
+// accessories are kept after the weapons, at their number + 32. Without it
+// the radio (accessory 11) took the place of the glock (weapon 11) and left
+// the menu as the player has no glock.
+#define MAX_HUD_WEAPONS ( MAX_WEAPONS * 2 )
+
+inline int HUD_WeaponIndex( int iId, int iAccessory )
+{
+	return iAccessory ? iId + MAX_WEAPONS : iId;
+}
+
 class WeaponsResource
 {
 private:
 	// Information about weapons & ammo
-	WEAPON		rgWeapons[MAX_WEAPONS];	// Weapons Array
+	WEAPON		rgWeapons[MAX_HUD_WEAPONS];	// Weapons Array
 
 	// counts of weapons * ammo
 	WEAPON*		rgSlots[MAX_WEAPON_SLOTS+1][MAX_WEAPON_POSITIONS+1];	// The slots currently in use by weapons.  The value is a pointer to the weapon;  if it's NULL, no weapon is there
@@ -39,23 +51,26 @@ public:
 	void Reset( void )
 	{
 		iOldWeaponBits = 0;
+		iOldAccessoryBits = 0;
 		memset( rgSlots, 0, sizeof rgSlots );
 		memset( riAmmo, 0, sizeof riAmmo );
 	}
 
 ///// WEAPON /////
 	int			iOldWeaponBits;
+	int			iOldAccessoryBits;
 
 	WEAPON *GetWeapon( int iId )
 	{
-		if ( iId < 0 || iId >= MAX_WEAPONS )
+		if ( iId < 0 || iId >= MAX_HUD_WEAPONS )
 			return NULL;
 		return &rgWeapons[iId];
 	}
 	void AddWeapon( WEAPON *wp ) 
 	{ 
-		rgWeapons[ wp->iId ] = *wp;	
-		LoadWeaponSprites( &rgWeapons[ wp->iId ] );
+		int idx = HUD_WeaponIndex( wp->iId, wp->iAccessory );
+		rgWeapons[ idx ] = *wp;
+		LoadWeaponSprites( &rgWeapons[ idx ] );
 	}
 
 	void PickupWeapon( WEAPON *wp )
@@ -76,7 +91,7 @@ public:
 
 	void DropAllWeapons( void )
 	{
-		for ( int i = 0; i < MAX_WEAPONS; i++ )
+		for ( int i = 0; i < MAX_HUD_WEAPONS; i++ )
 		{
 			if ( rgWeapons[i].iId )
 				DropWeapon( &rgWeapons[i] );

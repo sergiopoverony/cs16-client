@@ -43,6 +43,9 @@ int CHud :: MsgFunc_ResetHUD(const char *pszName, int iSize, void *pbuf )
 	// clear all hud data
 	HUDLIST *pList = m_pHudList;
 
+	// czeror: the server sends AccesBits again only when they are not zero
+	m_iAccessoryBits = 0;
+
 	while ( pList )
 	{
 		if ( pList->p )

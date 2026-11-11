@@ -57,7 +57,7 @@ int g_iShotsFired;
 
 void WeaponsResource :: LoadAllWeaponSprites( void )
 {
-	for( int i = 0; i < MAX_WEAPONS; i++ )
+	for( int i = 0; i < MAX_HUD_WEAPONS; i++ )
 	{
 		if ( rgWeapons[i].iId )
 			LoadWeaponSprites( &rgWeapons[i] );
@@ -253,6 +253,7 @@ int CHudAmmo::Init(void)
 	gHUD.AddHudElem(this);
 
 	HOOK_MESSAGE(gHUD.m_Ammo, CurWeapon);
+	HOOK_MESSAGE(gHUD.m_Ammo, AccesBits);
 	HOOK_MESSAGE(gHUD.m_Ammo, WeaponList);
 	HOOK_MESSAGE(gHUD.m_Ammo, AmmoPickup);
 	HOOK_MESSAGE(gHUD.m_Ammo, WeapPickup);
@@ -367,17 +368,23 @@ void CHudAmmo::Think(void)
 	if ( gHUD.m_fPlayerDead )
 		return;
 
-	if ( gHUD.m_iWeaponBits != gWR.iOldWeaponBits )
+	if ( gHUD.m_iWeaponBits != gWR.iOldWeaponBits || gHUD.m_iAccessoryBits != gWR.iOldAccessoryBits )
 	{
 		gWR.iOldWeaponBits = gHUD.m_iWeaponBits;
+		gWR.iOldAccessoryBits = gHUD.m_iAccessoryBits;
 
-		for (int i = 0; i < MAX_WEAPONS-1; i++ )
+		for (int i = 0; i < MAX_HUD_WEAPONS; i++ )
 		{
+			if ( i == WEAPON_SUIT )
+				continue;
+
 			WEAPON *p = gWR.GetWeapon(i);
 
-			if ( p )
+			if ( p && p->iId )
 			{
-				if ( gHUD.m_iWeaponBits & ( 1 << p->iId ) )
+				int bits = p->iAccessory ? gHUD.m_iAccessoryBits : gHUD.m_iWeaponBits;
+
+				if ( bits & ( 1 << p->iId ) )
 				{
 					gWR.PickupWeapon( p );
 				}
@@ -417,7 +424,7 @@ void CHudAmmo::Think(void)
 
 HSPRITE* WeaponsResource :: GetAmmoPicFromWeapon( int iAmmoId, wrect_t& rect )
 {
-	for ( int i = 0; i < MAX_WEAPONS; i++ )
+	for ( int i = 0; i < MAX_HUD_WEAPONS; i++ )
 	{
 		if ( rgWeapons[i].iAmmoType == iAmmoId )
 		{
@@ -536,6 +543,10 @@ int CHudAmmo::MsgFunc_WeapPickup( const char *pszName, int iSize, void *pbuf )
 	BufferReader reader( pszName, pbuf, iSize );
 	int iIndex = reader.ReadByte();
 
+	// czeror: the second byte tells an accessory
+	if( gHUD.GetGameType() == GAME_CZERODS && iSize > 1 )
+		iIndex = HUD_WeaponIndex( iIndex, reader.ReadByte());
+
 	// Add the weapon to the history
 	gHR.AddToHistory( HISTSLOT_WEAP, iIndex );
 
@@ -591,6 +602,11 @@ int CHudAmmo::MsgFunc_CurWeapon(const char *pszName, int iSize, void *pbuf )
 	int iState = reader.ReadByte();
 	int iId = reader.ReadChar();
 	int iClip = reader.ReadChar();
+	int iAccessory = 0;
+
+	// czeror: the fourth byte tells an accessory
+	if( gHUD.GetGameType() == GAME_CZERODS && iSize > 3 )
+		iAccessory = reader.ReadByte();
 
 	// detect if we're also on target
 	if( iState > 1 )
@@ -616,7 +632,7 @@ int CHudAmmo::MsgFunc_CurWeapon(const char *pszName, int iSize, void *pbuf )
 		gHUD.m_fPlayerDead = FALSE;
 	}
 
-	WEAPON *pWeapon = gWR.GetWeapon( iId );
+	WEAPON *pWeapon = gWR.GetWeapon( HUD_WeaponIndex( iId, iAccessory ));
 
 	if ( !pWeapon )
 		return 0;
@@ -655,6 +671,18 @@ int CHudAmmo::MsgFunc_CurWeapon(const char *pszName, int iSize, void *pbuf )
 }
 
 //
+// AccesBits (czeror) -- the accessories the player holds, as pev->weapons for the weapons
+//
+int CHudAmmo::MsgFunc_AccesBits( const char *pszName, int iSize, void *pbuf )
+{
+	BufferReader reader( pszName, pbuf, iSize );
+
+	gHUD.m_iAccessoryBits = reader.ReadLong();
+
+	return 1;
+}
+
+//
 // WeaponList -- Tells the hud about a new weapon type.
 //
 int CHudAmmo::MsgFunc_WeaponList(const char *pszName, int iSize, void *pbuf )
@@ -679,6 +707,11 @@ int CHudAmmo::MsgFunc_WeaponList(const char *pszName, int iSize, void *pbuf )
 	Weapon.iSlot = reader.ReadChar();
 	Weapon.iSlotPos = reader.ReadChar();
 	Weapon.iId = reader.ReadChar();
+
+	// czeror: one more byte before the flags tells an accessory
+	if( gHUD.GetGameType() == GAME_CZERODS )
+		Weapon.iAccessory = reader.ReadByte();
+
 	Weapon.iFlags = reader.ReadByte();
 	Weapon.iClip = 0;
 

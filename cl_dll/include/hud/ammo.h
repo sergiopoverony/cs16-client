@@ -35,6 +35,7 @@ struct WEAPON
 	int		iFlags;
 	int		iId;
 	int		iClip;
+	int		iAccessory;	// czeror: accessories (knife, radio, tools) have their own numbers
 
 	int		iCount;		// # of itesm in plist
 

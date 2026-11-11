@@ -184,6 +184,7 @@ public:
 
 	int DrawWList(float flTime);
 	CHudMsgFunc(CurWeapon);
+	CHudMsgFunc(AccesBits);
 	CHudMsgFunc(WeaponList);
 	CHudMsgFunc(AmmoX);
 	CHudMsgFunc(AmmoPickup);
@@ -1119,6 +1120,7 @@ public:
 	SCREENINFO  m_truescrinfo;
 
 	int	m_iWeaponBits;
+	int	m_iAccessoryBits;	// czeror: AccesBits, the accessories the player holds
 	int	m_fPlayerDead;
 	int m_iIntermission;
 	int m_iNoConsolePrint;
