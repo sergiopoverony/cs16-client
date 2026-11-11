@@ -56,9 +56,23 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 		if( ent->curstate.renderfx == 21 /* kRenderFxLightMultiplier */ )
 		{
 			// a zero multiplier makes the engine draw the model black (test 11.11: monsters of
-			// monstermakers in cz_recoil2); no multiplier is meant then
-			if( ent->curstate.iuser4 <= 0 )
-				ent->curstate.iuser4 = 10;
+			// monstermakers in cz_recoil2 came with 0, the ones placed on the map with 30).
+			// The monsters take the multiplier the other monsters of the map have.
+			static int s_iMonsterMul = 0;
+			static int s_iLastMul[4096];
+			bool monster = ent->curstate.movetype == MOVETYPE_STEP;
+
+			if( monster && ent->index > 0 && ent->index < 4096 && s_iLastMul[ent->index] != ent->curstate.iuser4 + 1 )
+			{
+				gEngfuncs.Con_DPrintf( "lightmul: monster %d %s iuser4 %d -> %d\n", ent->index, modelname ? modelname : "?",
+					s_iLastMul[ent->index] - 1, ent->curstate.iuser4 );
+				s_iLastMul[ent->index] = ent->curstate.iuser4 + 1;
+			}
+
+			if( ent->curstate.iuser4 > 0 && monster )
+				s_iMonsterMul = ent->curstate.iuser4;
+			else if( ent->curstate.iuser4 <= 0 )
+				ent->curstate.iuser4 = ( monster && s_iMonsterMul > 0 ) ? s_iMonsterMul : 10;
 
 			// iuser4 comes with the delta (czeror delta.lst: 8 bits); no renderamt fallback any more
 			static unsigned char seen[4096];
