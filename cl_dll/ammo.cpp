@@ -1128,6 +1128,22 @@ int CHudAmmo::Draw(float flTime)
 	int a, x, y, r, g, b;
 	int AmmoWidth;
 
+	// czeror: diagnostic, the crosshair went away after the radio in cz_lostcause.
+	// Logs what decides it when that changes
+	if( gHUD.GetGameType() == GAME_CZERODS )
+	{
+		static int s_last[6] = { -2, -2, -2, -2, -2, -2 };
+		int now[6] = { m_pWeapon ? m_pWeapon->iId : -1, m_pWeapon ? m_pWeapon->iAccessory : -1,
+			g_iUser1, gHUD.m_iHideHUDDisplay, gHUD.m_iFOV, m_bDrawCrosshair ? 1 : 0 };
+
+		if( memcmp( s_last, now, sizeof( now )))
+		{
+			gEngfuncs.Con_Printf( "crosshair: weapon %d accessory %d iuser1 %d hidehud %d fov %d draw %d\n",
+				now[0], now[1], now[2], now[3], now[4], now[5] );
+			memcpy( s_last, now, sizeof( now ));
+		}
+	}
+
 	// place it here, so pretty dynamic crosshair will work even in spectator!
 	if( gHUD.m_iFOV > 40 )
 	{
