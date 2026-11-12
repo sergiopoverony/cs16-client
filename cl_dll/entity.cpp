@@ -71,10 +71,17 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 				s_iLastMul[ent->index] = ent->curstate.iuser4 + 1;
 			}
 
-			if( ent->curstate.iuser4 > 0 && monster )
+			// (props with the multiplier 1 are movetype STEP too: only the bigger multipliers are the monsters')
+			if( ent->curstate.iuser4 > 14 && monster )
 				s_iMonsterMul = ent->curstate.iuser4;
 			else if( ent->curstate.iuser4 <= 0 )
 				ent->curstate.iuser4 = ( monster && s_iMonsterMul > 0 ) ? s_iMonsterMul : 10;
+
+			// props with the multiplier 1 are a little brighter in the original than the engine light gives
+			// (test 12.11, the generator and the pipes of cz_silo02 are almost black: the light under them is
+			// 25-55 of 255). 1.4 instead of 1.0
+			if( ent->curstate.iuser4 == 10 )
+				ent->curstate.iuser4 = 14;
 
 			// iuser4 comes with the delta (czeror delta.lst: 8 bits); no renderamt fallback any more
 			static unsigned char seen[4096];
@@ -83,17 +90,6 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 				seen[ent->index] = 1;
 				gEngfuncs.Con_DPrintf( "lightmul: ent %d %s iuser4=%d\n", ent->index, modelname ? modelname : "?", ent->curstate.iuser4 );
 
-				// the light the engine reads for the model (it looks 8 units above the origin and traces down):
-				// black props in cz_silo02 (generator, pipes)
-				if( ent->curstate.iuser4 == 10 && modelname )
-				{
-					vec3_t pos, light = { 0, 0, 0 };
-					VectorCopy( ent->origin, pos );
-					pos[2] += 8.0f;
-					gEngfuncs.pTriAPI->LightAtPoint( pos, light );
-					gEngfuncs.Con_Printf( "lightprop: ent %d %s origin %.0f %.0f %.0f angles %.0f %.0f %.0f effects %d movetype %d light at origin+8: %.0f %.0f %.0f\n", ent->index, modelname,
-						ent->origin[0], ent->origin[1], ent->origin[2], ent->angles[0], ent->angles[1], ent->angles[2], ent->curstate.effects, ent->curstate.movetype, light[0], light[1], light[2] );
-				}
 			}
 		}
 		// fall through
