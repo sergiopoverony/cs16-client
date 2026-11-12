@@ -113,6 +113,8 @@ struct FogParameters {
 	float color[3];
 	float density;
 	bool affectsSkyBox;
+	float start;
+	float end;
 };
 
 extern FogParameters g_FogParameters;

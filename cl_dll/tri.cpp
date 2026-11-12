@@ -40,7 +40,7 @@ void RenderFog()
 		fog.color[2] = cl_fog_b->value;
 	
 	gEngfuncs.pTriAPI->FogParams( fog.density, fog.affectsSkyBox );
-	gEngfuncs.pTriAPI->Fog( fog.color, 100.0f, 2000.0f, g_iWaterLevel <= 1 ? fog.density > 0.0f : 0 );
+	gEngfuncs.pTriAPI->Fog( fog.color, fog.start, fog.end, g_iWaterLevel <= 1 ? fog.density > 0.0f : 0 );
 }
 
 /*

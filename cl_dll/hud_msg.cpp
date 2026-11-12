@@ -118,8 +118,24 @@ int CHud :: MsgFunc_InitHUD( const char *pszName, int iSize, void *pbuf )
 	g_FogParameters.color[1] = 0.0f;
 	g_FogParameters.color[2] = 0.0f;
 
+	g_FogParameters.start = 1000.0f;
+	g_FogParameters.end = 3000.0f;
+
+	// czeror: the server sends env_fog inside InitHUD (3 shorts color, coord density, coord start, coord end, short flags)
+	if( iSize >= 14 )
+	{
+		BufferReader reader( pszName, pbuf, iSize );
+		g_FogParameters.color[0] = reader.ReadShort();
+		g_FogParameters.color[1] = reader.ReadShort();
+		g_FogParameters.color[2] = reader.ReadShort();
+		g_FogParameters.density = reader.ReadCoord() / 1000.0f;
+		g_FogParameters.start = reader.ReadCoord();
+		g_FogParameters.end = reader.ReadCoord();
+		g_FogParameters.affectsSkyBox = reader.ReadShort() != 0;
+	}
+
 	if( cl_fog_density )
-		gEngfuncs.Cvar_SetValue( cl_fog_density->name, 0.0f );
+		gEngfuncs.Cvar_SetValue( cl_fog_density->name, g_FogParameters.density );
 	
 	if( cl_fog_r )
 		gEngfuncs.Cvar_SetValue( cl_fog_r->name, g_FogParameters.color[0] );
