@@ -85,14 +85,14 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 
 				// the light the engine reads for the model (it looks 8 units above the origin and traces down):
 				// black props in cz_silo02 (generator, pipes)
-				if( !monster && modelname && ( strstr( modelname, "generator" ) || strstr( modelname, "pipe" ) || strstr( modelname, "conduit" )))
+				if( ent->curstate.iuser4 == 10 && modelname )
 				{
 					vec3_t pos, light = { 0, 0, 0 };
 					VectorCopy( ent->origin, pos );
 					pos[2] += 8.0f;
 					gEngfuncs.pTriAPI->LightAtPoint( pos, light );
-					gEngfuncs.Con_Printf( "lightprop: ent %d %s origin %.0f %.0f %.0f body %d light at origin+8: %.0f %.0f %.0f\n", ent->index, modelname,
-						ent->origin[0], ent->origin[1], ent->origin[2], ent->curstate.body, light[0], light[1], light[2] );
+					gEngfuncs.Con_Printf( "lightprop: ent %d %s origin %.0f %.0f %.0f angles %.0f %.0f %.0f effects %d movetype %d light at origin+8: %.0f %.0f %.0f\n", ent->index, modelname,
+						ent->origin[0], ent->origin[1], ent->origin[2], ent->angles[0], ent->angles[1], ent->angles[2], ent->curstate.effects, ent->curstate.movetype, light[0], light[1], light[2] );
 				}
 			}
 		}
