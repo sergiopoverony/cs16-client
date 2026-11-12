@@ -45,6 +45,7 @@ cvar_t *cl_fog_r;
 cvar_t *cl_fog_g;
 cvar_t *cl_fog_b;
 cvar_t *cl_fog_density;
+cvar_t *cl_fog_scale;
 
 extern client_sprite_t *GetSpriteList(client_sprite_t *pList, const char *psz, int iRes, int iCount);
 
@@ -399,6 +400,7 @@ void CHud :: Init( void )
 	if ( gEngfuncs.pfnGetCvarFloat( "developer" ) > 0.0f )
 	{
 		cl_fog_density = CVAR_CREATE( "cl_fog_density", "0", 0 );
+		cl_fog_scale = CVAR_CREATE( "cl_fog_scale", "1.6", FCVAR_ARCHIVE ); // multiplier for map fog density
 		cl_fog_r = CVAR_CREATE( "cl_fog_r", "0", 0 );
 		cl_fog_g = CVAR_CREATE( "cl_fog_g", "0", 0 );
 		cl_fog_b = CVAR_CREATE( "cl_fog_b", "0", 0 );

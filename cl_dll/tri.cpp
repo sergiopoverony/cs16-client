@@ -30,6 +30,9 @@ void RenderFog()
 	if( cl_fog_density )
 		fog.density = cl_fog_density->value;
 
+	if( cl_fog_scale && cl_fog_scale->value > 0.0f )
+		fog.density *= cl_fog_scale->value;
+
 	if( cl_fog_r )
 		fog.color[0] = cl_fog_r->value;
 
