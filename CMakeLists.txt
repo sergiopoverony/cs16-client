@@ -86,10 +86,16 @@ endif()
 if(BUILD_MAINUI)
 #	set(CS16CLIENT ON)
 	# set(XASH_SDK ../../)
-	# CZ:DS extra menus (world map): copied into the menu library sources, they are globbed from menus/
-	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/mainui_extra/WorldMap.cpp ${CMAKE_CURRENT_SOURCE_DIR}/mainui_extra/Main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/mainui_extra/NewGame.cpp DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/mainui_cpp/menus)
-	set(MAINUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/mainui_cpp)
-	include(${CMAKE_CURRENT_SOURCE_DIR}/mainui_extra/patch_mainui.cmake)
+	# CZ:DS: world map and the menu of the mod: the same patch that goes to FWGS/mainui_cpp as a PR
+	# (everything is switched on only for the game folder czeror). Applied once, before the menu is configured.
+	find_program(PATCH_PROGRAM patch)
+	if(PATCH_PROGRAM AND NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/mainui_cpp/menus/WorldMap.cpp)
+		execute_process(COMMAND ${PATCH_PROGRAM} -p1 -F3 -i ${CMAKE_CURRENT_SOURCE_DIR}/mainui_extra/czds_mainui.patch
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/mainui_cpp RESULT_VARIABLE czds_patch_res)
+		if(NOT czds_patch_res EQUAL 0)
+			message(FATAL_ERROR "CZ:DS menu patch failed")
+		endif()
+	endif()
 	add_subdirectory(3rdparty/mainui_cpp)
 	yy_thunks_apply(menu)
 endif()
