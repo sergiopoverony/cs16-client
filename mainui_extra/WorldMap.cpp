@@ -208,9 +208,12 @@ void CMenuWorldMap::Image( CImage &img, int x, int y, int w, int h, unsigned int
 
 void CMenuWorldMap::Text( const std::string &str, int x, int y, int w, int h, unsigned int col, int charH, uint justify )
 {
-	// the default font of the menu is 26 px: too big here. Headings take the 20 px font, the rest the 12 px one
-	HFont font = charH >= 18 ? uiStatic.hSmallFont : uiStatic.hTinyFont;
-	int fontH = charH >= 18 ? UI_SMALL_CHAR_HEIGHT : UI_TINY_CHAR_HEIGHT;
+	// the default font of the menu is 26 px: too big here. Headings take the 20 px font,
+	// the names on the map (15) the 12 px one, all the other texts the 16 px one
+	HFont font = uiStatic.hSmallerFont;
+	int fontH = UI_SMALLER_CHAR_HEIGHT;
+	if( charH >= 18 ) { font = uiStatic.hSmallFont; fontH = UI_SMALL_CHAR_HEIGHT; }
+	else if( charH == 15 ) { font = uiStatic.hTinyFont; fontH = UI_TINY_CHAR_HEIGHT; }
 	UI_DrawString( font, m_iOffX + (int)( x * m_flScale ), m_iOffY + (int)( y * m_flScale ),
 		(int)( w * m_flScale ), (int)( h * m_flScale ), str.c_str(), col, (int)( fontH * m_flScale ), justify, ETF_FORCECOL );
 }
