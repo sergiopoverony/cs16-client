@@ -1,0 +1,10 @@
+--- a/menus/Main.cpp	2026-11-13 11:16:06.188469973 +0000
++++ b/menus/Main.cpp	2026-11-13 11:16:14.070609775 +0000
+@@ -384,6 +384,7 @@
+ 	multiPlayer.SetVisibility( false );
+ 	customGame.SetVisibility( false );
+ 	previews.SetVisibility( false );
++	readme.SetVisibility( false );
+ 
+ 	saveRestore.SetNameAndStatus( L( "GameUI_LoadGame" ), L( "StringsList_191" ) );
+ 	saveRestore.SetPicture( PC_LOAD_GAME );
