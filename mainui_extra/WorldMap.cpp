@@ -16,6 +16,7 @@ the Free Software Foundation; either version 3 of the License, or
 #include "Image.h"
 #include "keydefs.h"
 #include "Utils.h"
+#include "FontRenderer.h"
 
 // all missions are open while the progress is not saved (testing). false = only the ones with "open" flag
 static const bool g_bAllOpen = true;
@@ -207,8 +208,11 @@ void CMenuWorldMap::Image( CImage &img, int x, int y, int w, int h, unsigned int
 
 void CMenuWorldMap::Text( const std::string &str, int x, int y, int w, int h, unsigned int col, int charH, uint justify )
 {
-	UI_DrawString( uiStatic.hDefaultFont, m_iOffX + (int)( x * m_flScale ), m_iOffY + (int)( y * m_flScale ),
-		(int)( w * m_flScale ), (int)( h * m_flScale ), str.c_str(), col, (int)( charH * m_flScale ), justify, ETF_FORCECOL );
+	// the default font of the menu is 26 px: too big here. Headings take the 20 px font, the rest the 12 px one
+	HFont font = charH >= 18 ? uiStatic.hSmallFont : uiStatic.hTinyFont;
+	int fontH = charH >= 18 ? UI_SMALL_CHAR_HEIGHT : UI_TINY_CHAR_HEIGHT;
+	UI_DrawString( font, m_iOffX + (int)( x * m_flScale ), m_iOffY + (int)( y * m_flScale ),
+		(int)( w * m_flScale ), (int)( h * m_flScale ), str.c_str(), col, (int)( fontH * m_flScale ), justify, ETF_FORCECOL );
 }
 
 bool CMenuWorldMap::In( int mx, int my, int x, int y, int w, int h ) const
