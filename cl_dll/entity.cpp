@@ -44,6 +44,30 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 	switch ( type )
 	{
 	case ET_NORMAL:
+		// env_glow lamps (kRenderGlow sprites) are too bright/big up close: tune with cl_glow_alpha / cl_glow_size
+		if( ent->curstate.rendermode == kRenderGlow && ent->model && ent->model->type == mod_sprite
+			&& ent->index > 0 && ent->index < 4096 )
+		{
+			static int s_origAmt[4096], s_lastAmt[4096];
+			static float s_origScale[4096], s_lastScale[4096];
+			int i = ent->index;
+
+			// the engine refreshes curstate on network updates: take a new original only when it is not our value
+			if( ent->curstate.renderamt != s_lastAmt[i] || ent->curstate.scale != s_lastScale[i] )
+			{
+				s_origAmt[i] = ent->curstate.renderamt;
+				s_origScale[i] = ent->curstate.scale;
+			}
+
+			float a = cl_glow_alpha ? cl_glow_alpha->value : 1.0f;
+			float sz = cl_glow_size ? cl_glow_size->value : 1.0f;
+			int amt = (int)( s_origAmt[i] * a + 0.5f );
+			if( amt < 0 ) amt = 0;
+			if( amt > 255 ) amt = 255;
+
+			ent->curstate.renderamt = s_lastAmt[i] = amt;
+			ent->curstate.scale = s_lastScale[i] = s_origScale[i] * sz;
+		}
 		if( modelname && strstr( modelname, "microscope" ) && ent->index > 0 && ent->index < 4096 )
 		{
 			static unsigned char seenM[4096];

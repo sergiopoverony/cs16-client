@@ -109,6 +109,8 @@ extern cvar_t *cl_fog_g;
 extern cvar_t *cl_fog_b;
 extern cvar_t *cl_fog_density;
 extern cvar_t *cl_fog_scale;
+extern cvar_t *cl_glow_alpha;
+extern cvar_t *cl_glow_size;
 
 struct FogParameters {
 	float color[3];

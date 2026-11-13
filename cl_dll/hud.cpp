@@ -46,6 +46,8 @@ cvar_t *cl_fog_g;
 cvar_t *cl_fog_b;
 cvar_t *cl_fog_density;
 cvar_t *cl_fog_scale;
+cvar_t *cl_glow_alpha;
+cvar_t *cl_glow_size;
 
 extern client_sprite_t *GetSpriteList(client_sprite_t *pList, const char *psz, int iRes, int iCount);
 
@@ -401,6 +403,8 @@ void CHud :: Init( void )
 	{
 		cl_fog_density = CVAR_CREATE( "cl_fog_density", "0", 0 );
 		cl_fog_scale = CVAR_CREATE( "cl_fog_scale", "1.3", FCVAR_ARCHIVE ); // multiplier for map fog density
+		cl_glow_alpha = CVAR_CREATE( "cl_glow_alpha", "1.0", 0 ); // brightness multiplier of env_glow lamps
+		cl_glow_size = CVAR_CREATE( "cl_glow_size", "1.0", 0 ); // size multiplier of env_glow lamps
 		cl_fog_r = CVAR_CREATE( "cl_fog_r", "0", 0 );
 		cl_fog_g = CVAR_CREATE( "cl_fog_g", "0", 0 );
 		cl_fog_b = CVAR_CREATE( "cl_fog_b", "0", 0 );
