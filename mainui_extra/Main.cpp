@@ -183,7 +183,7 @@ void CMenuMain::_Init( void )
 	// console
 	console.SetNameAndStatus( L( "GameUI_Console" ), NULL );
 	console.iFlags |= QMF_NOTIFY;
-	console.SetPicture( PC_CONSOLE );
+	// text only (no CS sprites)
 	console.SetVisibility( gpGlobals->developer );
 	SET_EVENT_MULTI( console.onReleased,
 	{
@@ -191,41 +191,41 @@ void CMenuMain::_Init( void )
 		EngFuncs::KEY_SetDest( KEY_CONSOLE );
 	});
 
-	resumeGame.SetNameAndStatus( L( "GameUI_GameMenu_ResumeGame" ), L( "StringsList_188" ) );
-	resumeGame.SetPicture( PC_RESUME_GAME );
+	resumeGame.SetNameAndStatus( L( "Resume Game" ), L( "Return to the game" ) );
+	// text only (no CS sprites)
 	resumeGame.iFlags |= QMF_NOTIFY;
 	resumeGame.onReleased = UI_CloseMenu;
 
 	disconnect.SetNameAndStatus( L( "GameUI_GameMenu_Disconnect" ), L( "Disconnect from server." ) );
-	disconnect.SetPicture( PC_DISCONNECT );
+	// text only (no CS sprites)
 	disconnect.iFlags |= QMF_NOTIFY;
 	disconnect.onReleased = VoidCb( &CMenuMain::DisconnectDialogCb );
 
-	newGame.SetNameAndStatus( L( "GameUI_NewGame" ), L( "StringsList_189" ) );
-	newGame.SetPicture( PC_NEW_GAME );
+	newGame.SetNameAndStatus( L( "New Game" ), L( "Start the training or a new game on the chosen difficulty" ) );
+	// text only (no CS sprites)
 	newGame.iFlags |= QMF_NOTIFY;
 	newGame.onReleased = UI_NewGame_Menu;
 
 	hazardCourse.SetNameAndStatus( L( "GameUI_TrainingRoom" ), L( "StringsList_190" ) );
-	hazardCourse.SetPicture( PC_HAZARD_COURSE );
+	// text only (no CS sprites)
 	hazardCourse.iFlags |= QMF_NOTIFY;
 	hazardCourse.onReleasedClActive = VoidCb( &CMenuMain::HazardCourseDialogCb );
 	hazardCourse.onReleased = VoidCb( &CMenuMain::HazardCourseCb );
 
 	multiPlayer.SetNameAndStatus( L( "GameUI_Multiplayer" ), L( "StringsList_198" ) );
-	multiPlayer.SetPicture( PC_MULTIPLAYER );
+	// text only (no CS sprites)
 	multiPlayer.iFlags |= QMF_NOTIFY;
 	multiPlayer.onReleased = UI_MultiPlayer_Menu;
 
 	configuration.SetNameAndStatus( L( "GameUI_Options" ), L( "StringsList_193" ) );
-	configuration.SetPicture( PC_CONFIG );
+	// text only (no CS sprites)
 	configuration.iFlags |= QMF_NOTIFY;
 	configuration.onReleased = UI_Options_Menu;
 
 	saveRestore.iFlags |= QMF_NOTIFY;
 
-	saveGame.SetNameAndStatus( L( "GameUI_SaveGame" ), L( "StringsList_192" ) );
-	saveGame.SetPicture( PC_SAVE_GAME );
+	saveGame.SetNameAndStatus( L( "Save Game" ), L( "Save the game" ) );
+	// text only (no CS sprites)
 	saveGame.iFlags |= QMF_NOTIFY;
 	saveGame.onReleased = UI_SaveGame_Menu;
 
@@ -235,22 +235,22 @@ void CMenuMain::_Init( void )
 	worldMap.onReleased = UI_WorldMap_Menu;
 
 	customGame.SetNameAndStatus( L( "GameUI_ChangeGame" ), L( "StringsList_530" ) );
-	customGame.SetPicture( PC_CUSTOM_GAME );
+	// text only (no CS sprites)
 	customGame.iFlags |= QMF_NOTIFY;
 	customGame.onReleased = UI_CustomGame_Menu;
 
 	// TODO: add readme screen later
 	readme.SetNameAndStatus( L("View Readme"), L( "StringsList_194" ) );
-	readme.SetPicture( PC_VIEW_README );
+	// text only (no CS sprites)
 	readme.iFlags |= QMF_NOTIFY;
 
 	previews.SetNameAndStatus( L( "Previews" ), L( "StringsList_400" ) );
-	previews.SetPicture( PC_PREVIEWS );
+	// text only (no CS sprites)
 	previews.iFlags |= QMF_NOTIFY;
 	SET_EVENT( previews.onReleased, EngFuncs::ShellExecute( MenuStrings[ IDS_MEDIA_PREVIEWURL ], NULL, false ) );
 
 	quit.SetNameAndStatus( L( "GameUI_GameMenu_Quit" ), L( "GameUI_QuitConfirmationText" ) );
-	quit.SetPicture( PC_QUIT );
+	// text only (no CS sprites)
 	quit.iFlags |= QMF_NOTIFY;
 	quit.onReleased = VoidCb( &CMenuMain::QuitDialogCb );
 
@@ -264,8 +264,7 @@ void CMenuMain::_Init( void )
 	minimizeBtn.eFocusAnimation = QM_HIGHLIGHTIFFOCUS;
 	minimizeBtn.onReleased.SetCommand( false, "minimize\n" );
 
-	if ( gMenu.m_gameinfo.gamemode == GAME_MULTIPLAYER_ONLY || gMenu.m_gameinfo.startmap[0] == 0 )
-		newGame.SetGrayed( true );
+	// CZ:DS: New Game is never grayed by the startmap of the game info
 
 	if ( gMenu.m_gameinfo.gamemode == GAME_SINGLEPLAYER_ONLY )
 		multiPlayer.SetGrayed( true );
@@ -379,7 +378,7 @@ void CMenuMain::VidInit( bool connected )
 	saveGame.SetVisibility( connected && single );
 
 	saveRestore.SetNameAndStatus( L( "GameUI_LoadGame" ), L( "StringsList_191" ) );
-	saveRestore.SetPicture( PC_LOAD_GAME );
+	// text only (no CS sprites)
 	saveRestore.onReleased = UI_LoadGame_Menu;
 }
 

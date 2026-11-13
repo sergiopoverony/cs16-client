@@ -138,11 +138,11 @@ void CMenuNewGame::_Init( void )
 
 	// CZ:DS: Training first (as in the original New Game window)
 	trainCallback = TrainingCb;
-	AddButton( L( "GameUI_TrainingRoom" ), L( "StringsList_190" ), PC_HAZARD_COURSE, trainCallback, QMF_NOTIFY );
+	AddButton( L( "Training" ), L( "Play the training mission" ), (EDefaultBtns)-1, trainCallback, QMF_NOTIFY );
 
-	CMenuPicButton *easy = AddButton( L( "GameUI_Easy" ), L( "StringsList_200" ), PC_EASY, easyCallback, QMF_NOTIFY );
-	CMenuPicButton *norm = AddButton( L( "GameUI_Medium" ), L( "StringsList_201" ), PC_MEDIUM, normCallback, QMF_NOTIFY );
-	CMenuPicButton *hard = AddButton( L( "GameUI_Hard" ), L( "StringsList_202" ), PC_DIFFICULT, hardCallback, QMF_NOTIFY );
+	CMenuPicButton *easy = AddButton( L( "Easy" ), L( "Easy difficulty" ), (EDefaultBtns)-1, easyCallback, QMF_NOTIFY );
+	CMenuPicButton *norm = AddButton( L( "Medium" ), L( "Normal difficulty" ), (EDefaultBtns)-1, normCallback, QMF_NOTIFY );
+	CMenuPicButton *hard = AddButton( L( "Hard" ), L( "Hard difficulty" ), (EDefaultBtns)-1, hardCallback, QMF_NOTIFY );
 
 	easy->onReleasedClActive =
 		norm->onReleasedClActive =
@@ -151,7 +151,7 @@ void CMenuNewGame::_Init( void )
 	norm->onReleasedClActive.pExtra = &normCallback;
 	hard->onReleasedClActive.pExtra = &hardCallback;
 
-	AddButton( L( "GameUI_Cancel" ), L( "Go back to the Main menu" ), PC_CANCEL, VoidCb( &CMenuNewGame::Hide ), QMF_NOTIFY );
+	AddButton( L( "GameUI_Cancel" ), L( "Go back to the Main menu" ), (EDefaultBtns)-1, VoidCb( &CMenuNewGame::Hide ), QMF_NOTIFY );
 
 	startDemoChapter.SetCoord( 72, 230 + m_iBtnsNum * 50 );
 	startDemoChapter.SetNameAndStatus( L( "GameUI_PlayGame_Alt" ), L( "Play the demo chapter on selected difficulty" ));
