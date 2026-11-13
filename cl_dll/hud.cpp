@@ -315,6 +315,14 @@ static int __MsgFunc_MapInfo( const char *pszName, int iSize, void *pbuf )
 	return 1;
 }
 
+// unlocked missions of the world map: the server sends the mask, the menu reads the cvar
+static int __MsgFunc_LevelLocks( const char *pszName, int iSize, void *pbuf )
+{
+	BufferReader reader( pszName, pbuf, iSize );
+	gEngfuncs.Cvar_SetValue( "cl_levellocks", (float)reader.ReadLong() );
+	return 1;
+}
+
 static void __CmdFunc_CzMusic( void )
 {
 	if( gEngfuncs.Cmd_Argc() < 2 )
@@ -338,6 +346,10 @@ void CHud :: Init( void )
 	HOOK_COMMAND_FUNC( "cz_music", __CmdFunc_CzMusic, );
 	HOOK_COMMAND_FUNC( "worldmap", __CmdFunc_WorldMap, );
 	HOOK_MESSAGE_FUNC( "MapInfo", __MsgFunc_MapInfo );
+	HOOK_MESSAGE_FUNC( "LevelLocks", __MsgFunc_LevelLocks );
+	// training + recoil + the six bonus missions are open on a new game (LEVEL_* in the server)
+	CVAR_CREATE( "cl_levellocks", "1032198", FCVAR_ARCHIVE );
+	CVAR_CREATE( "cl_newgame", "0", 0 );
 	CzFiber_Init();
 
 #ifdef __ANDROID__
