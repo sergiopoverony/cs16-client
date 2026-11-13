@@ -308,6 +308,13 @@ static void __CmdFunc_WorldMap( void )
 	gEngfuncs.pfnClientCmd( "menu_worldmap\n" );
 }
 
+// the server sends it from item_worldmap (map cz_worldmap, where a finished mission leads): open the world map
+static int __MsgFunc_MapInfo( const char *pszName, int iSize, void *pbuf )
+{
+	gEngfuncs.pfnClientCmd( "menu_worldmap\n" );
+	return 1;
+}
+
 static void __CmdFunc_CzMusic( void )
 {
 	if( gEngfuncs.Cmd_Argc() < 2 )
@@ -330,6 +337,7 @@ void CHud :: Init( void )
 	HOOK_COMMAND_FUNC( "gunsmoke", __CmdFunc_GunSmoke, );
 	HOOK_COMMAND_FUNC( "cz_music", __CmdFunc_CzMusic, );
 	HOOK_COMMAND_FUNC( "worldmap", __CmdFunc_WorldMap, );
+	HOOK_MESSAGE_FUNC( "MapInfo", __MsgFunc_MapInfo );
 	CzFiber_Init();
 
 #ifdef __ANDROID__
