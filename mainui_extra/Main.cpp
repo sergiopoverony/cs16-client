@@ -191,7 +191,7 @@ void CMenuMain::_Init( void )
 		EngFuncs::KEY_SetDest( KEY_CONSOLE );
 	});
 
-	resumeGame.SetNameAndStatus( L( "Resume Game" ), L( "Return to the game" ) );
+	resumeGame.SetNameAndStatus( L( "GameUI_GameMenu_ResumeGame" ), L( "StringsList_188" ) );
 	// text only (no CS sprites)
 	resumeGame.iFlags |= QMF_NOTIFY;
 	resumeGame.onReleased = UI_CloseMenu;
@@ -201,7 +201,7 @@ void CMenuMain::_Init( void )
 	disconnect.iFlags |= QMF_NOTIFY;
 	disconnect.onReleased = VoidCb( &CMenuMain::DisconnectDialogCb );
 
-	newGame.SetNameAndStatus( L( "New Game" ), L( "Start the training or a new game on the chosen difficulty" ) );
+	newGame.SetNameAndStatus( L( "GameUI_NewGame" ), L( "StringsList_189" ) );
 	// text only (no CS sprites)
 	newGame.iFlags |= QMF_NOTIFY;
 	newGame.onReleased = UI_NewGame_Menu;
@@ -224,13 +224,13 @@ void CMenuMain::_Init( void )
 
 	saveRestore.iFlags |= QMF_NOTIFY;
 
-	saveGame.SetNameAndStatus( L( "Save Game" ), L( "Save the game" ) );
+	saveGame.SetNameAndStatus( L( "GameUI_SaveGame" ), L( "StringsList_192" ) );
 	// text only (no CS sprites)
 	saveGame.iFlags |= QMF_NOTIFY;
 	saveGame.onReleased = UI_SaveGame_Menu;
 
 	// no picture: the text of the button is drawn
-	worldMap.SetNameAndStatus( L( "World Map" ), L( "Choose a mission" ) );
+	worldMap.SetNameAndStatus( L( "CZERO_WorldMap" ), L( "Choose a mission" ) );
 	worldMap.iFlags |= QMF_NOTIFY;
 	worldMap.onReleased = UI_WorldMap_Menu;
 

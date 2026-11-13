@@ -138,11 +138,11 @@ void CMenuNewGame::_Init( void )
 
 	// CZ:DS: Training first (as in the original New Game window)
 	trainCallback = TrainingCb;
-	AddButton( L( "Training" ), L( "Play the training mission" ), (EDefaultBtns)-1, trainCallback, QMF_NOTIFY );
+	AddButton( L( "GameUI_TrainingRoom" ), L( "StringsList_190" ), (EDefaultBtns)-1, trainCallback, QMF_NOTIFY );
 
-	CMenuPicButton *easy = AddButton( L( "Easy" ), L( "Easy difficulty" ), (EDefaultBtns)-1, easyCallback, QMF_NOTIFY );
-	CMenuPicButton *norm = AddButton( L( "Medium" ), L( "Normal difficulty" ), (EDefaultBtns)-1, normCallback, QMF_NOTIFY );
-	CMenuPicButton *hard = AddButton( L( "Hard" ), L( "Hard difficulty" ), (EDefaultBtns)-1, hardCallback, QMF_NOTIFY );
+	CMenuPicButton *easy = AddButton( L( "GameUI_Easy" ), L( "StringsList_200" ), (EDefaultBtns)-1, easyCallback, QMF_NOTIFY );
+	CMenuPicButton *norm = AddButton( L( "GameUI_Medium" ), L( "StringsList_201" ), (EDefaultBtns)-1, normCallback, QMF_NOTIFY );
+	CMenuPicButton *hard = AddButton( L( "GameUI_Hard" ), L( "StringsList_202" ), (EDefaultBtns)-1, hardCallback, QMF_NOTIFY );
 
 	easy->onReleasedClActive =
 		norm->onReleasedClActive =
