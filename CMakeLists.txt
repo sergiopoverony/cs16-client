@@ -86,6 +86,8 @@ endif()
 if(BUILD_MAINUI)
 #	set(CS16CLIENT ON)
 	# set(XASH_SDK ../../)
+	# CZ:DS extra menus (world map): copied into the menu library sources, they are globbed from menus/
+	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/mainui_extra/WorldMap.cpp DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/mainui_cpp/menus)
 	add_subdirectory(3rdparty/mainui_cpp)
 	yy_thunks_apply(menu)
 endif()

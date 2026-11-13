@@ -302,6 +302,12 @@ bool g_bCzMusicPending = false;
 float g_flCzMusicAt = 0.0f;
 float g_flCzMapDrawn = 0.0f; // first HUD redraw of this map (reset in VidInit)
 
+// opens the world map window of the menu library (menu_worldmap)
+static void __CmdFunc_WorldMap( void )
+{
+	gEngfuncs.pfnClientCmd( "menu_worldmap\n" );
+}
+
 static void __CmdFunc_CzMusic( void )
 {
 	if( gEngfuncs.Cmd_Argc() < 2 )
@@ -323,6 +329,7 @@ void CHud :: Init( void )
 	HOOK_COMMAND_FUNC( "special", __CmdFunc_InputCommandSpecial, );
 	HOOK_COMMAND_FUNC( "gunsmoke", __CmdFunc_GunSmoke, );
 	HOOK_COMMAND_FUNC( "cz_music", __CmdFunc_CzMusic, );
+	HOOK_COMMAND_FUNC( "worldmap", __CmdFunc_WorldMap, );
 	CzFiber_Init();
 
 #ifdef __ANDROID__
