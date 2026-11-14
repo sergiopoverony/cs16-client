@@ -44,6 +44,12 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 	switch ( type )
 	{
 	case ET_NORMAL:
+		// CZ:DS: a model that must be invisible (renderamt 0 with blending, e.g. the model of trigger_camera) is not drawn at all,
+		// otherwise it flickers on the floor
+		if( ent->curstate.rendermode == kRenderTransTexture && ent->curstate.renderamt == 0
+			&& ent->model && ent->model->type == mod_studio && ent != gEngfuncs.GetViewModel() )
+			return 0;
+
 		// env_glow lamps (kRenderGlow sprites) are too bright/big up close: tune with cl_glow_alpha / cl_glow_size
 		if( ent->curstate.rendermode == kRenderGlow && ent->model && ent->model->type == mod_sprite
 			&& ent->index > 0 && ent->index < 4096 )
