@@ -75,6 +75,11 @@ public:
 
 	void PickupWeapon( WEAPON *wp )
 	{
+		// czeror: WeapPickup can come before WeaponList. The weapon is empty then (slot 0, position 0) and would take
+		// a second place in the menu after its description comes. The weapon bits put it to the right place later.
+		if ( !wp->iId )
+			return;
+
 		rgSlots[ wp->iSlot ][ wp->iSlotPos ] = wp;
 	}
 

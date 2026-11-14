@@ -98,9 +98,51 @@ void EV_FireFiberOpticCamera( event_args_t *args )
 {
 	ConsolePrint( "FIRE FIBER OPTIC CAMERA !!! !!! !!!\n");
 }
+// the shield with the pistol (v_shield_r.mdl): the server sends the punch angles * 10000000, the sounds are of the Five-seveN
 void EV_FireShieldGun( event_args_t *args )
 {
+	Vector ShellVelocity;
+	Vector ShellOrigin;
+	Vector vecSrc, vecAiming;
 
+	int idx = args->entindex;
+	Vector origin( args->origin );
+	Vector angles(
+		args->iparam1 / 10000000.0f + args->angles[0],
+		args->iparam2 / 10000000.0f + args->angles[1],
+		args->angles[2] );
+	Vector velocity( args->velocity );
+	Vector forward, right, up;
+
+	AngleVectors( angles, forward, right, up );
+
+	if ( EV_IsLocal( idx ) )
+	{
+		++g_iShotsFired;
+		EV_MuzzleFlash();
+		// SHIELDGUN_SHOOT1 = 1, SHIELDGUN_SHOOT2 = 2, SHIELDGUN_SHOOT_EMPTY = 3
+		gEngfuncs.pEventAPI->EV_WeaponAnimation( args->bparam1 ? 3 : Com_RandomLong( 1, 2 ), 2 );
+		EV_GetDefaultShellInfo( args, origin, velocity, ShellVelocity, ShellOrigin, forward, right, up, 36.0, -14.0, 14.0, 0 );
+	}
+	else
+	{
+		EV_GetDefaultShellInfo( args, origin, velocity, ShellVelocity, ShellOrigin, forward, right, up, 20.0, -12.0, 4.0, 0 );
+	}
+
+	EV_EjectBrass( ShellOrigin, ShellVelocity, angles[YAW], g_iPShell, TE_BOUNCE_SHELL );
+
+	PLAY_EVENT_SOUND( "weapons/fiveseven-1.wav" );
+
+	EV_GetGunPosition( args, vecSrc, origin );
+	VectorCopy( forward, vecAiming );
+
+	Vector vSpread( args->fparam1, args->fparam2, 0.0f );
+
+	EV_HLDM_FireBullets( idx,
+		forward, right, up,
+		1, vecSrc, vecAiming,
+		vSpread, 8192.0, BULLET_PLAYER_57MM,
+		2 );
 }
 
 int g_iBlowTorchFiring = 0;

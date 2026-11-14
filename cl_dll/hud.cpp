@@ -323,6 +323,44 @@ static int __MsgFunc_LevelLocks( const char *pszName, int iSize, void *pbuf )
 	return 1;
 }
 
+// "cz_near [radius]": prints what is drawn near the player (to find out what a strange thing on the map is)
+static void __CmdFunc_CzNear( void )
+{
+	cl_entity_t *me = gEngfuncs.GetLocalPlayer();
+	if( !me )
+		return;
+
+	float radius = gEngfuncs.Cmd_Argc() > 1 ? atof( gEngfuncs.Cmd_Argv( 1 )) : 200.0f;
+	gEngfuncs.Con_Printf( "cz_near: player at %.0f %.0f %.0f, radius %.0f\n", me->origin[0], me->origin[1], me->origin[2], radius );
+
+	for( int i = 1; i < 2048; i++ )
+	{
+		cl_entity_t *ent = gEngfuncs.GetEntityByIndex( i );
+		if( !ent || !ent->model || ent == me )
+			continue;
+		if( ent->curstate.messagenum != me->curstate.messagenum )
+			continue; // not sent this frame
+
+		Vector c = ent->origin;
+		Vector size( 0, 0, 0 );
+		if( ent->model->type == mod_brush )
+		{
+			c = c + ( Vector( ent->model->mins ) + Vector( ent->model->maxs )) * 0.5f;
+			size = Vector( ent->model->maxs ) - Vector( ent->model->mins );
+		}
+
+		float dist = ( c - Vector( me->origin )).Length();
+		if( dist > radius )
+			continue;
+
+		gEngfuncs.Con_Printf( "cz_near: #%d %s dist %.0f at %.0f %.0f %.0f size %.0f %.0f %.0f mode %d amt %d color %d %d %d fx %d effects %d seq %d\n",
+			i, ent->model->name, dist, c[0], c[1], c[2], size[0], size[1], size[2],
+			ent->curstate.rendermode, ent->curstate.renderamt,
+			ent->curstate.rendercolor.r, ent->curstate.rendercolor.g, ent->curstate.rendercolor.b,
+			ent->curstate.renderfx, ent->curstate.effects, ent->curstate.sequence );
+	}
+}
+
 static void __CmdFunc_CzMusic( void )
 {
 	if( gEngfuncs.Cmd_Argc() < 2 )
@@ -345,6 +383,7 @@ void CHud :: Init( void )
 	HOOK_COMMAND_FUNC( "gunsmoke", __CmdFunc_GunSmoke, );
 	HOOK_COMMAND_FUNC( "cz_music", __CmdFunc_CzMusic, );
 	HOOK_COMMAND_FUNC( "worldmap", __CmdFunc_WorldMap, );
+	HOOK_COMMAND_FUNC( "cz_near", __CmdFunc_CzNear, );
 	HOOK_MESSAGE_FUNC( "MapInfo", __MsgFunc_MapInfo );
 	HOOK_MESSAGE_FUNC( "LevelLocks", __MsgFunc_LevelLocks );
 	// training + recoil + the six bonus missions are open on a new game (LEVEL_* in the server)
