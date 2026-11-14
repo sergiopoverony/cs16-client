@@ -57,7 +57,7 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 		if( ent->model && ent->model->type == mod_brush && ent->curstate.rendermode == kRenderTransAlpha
 			&& ent->curstate.movetype == MOVETYPE_NONE
 			&& ent->curstate.origin[0] == 0.0f && ent->curstate.origin[1] == 0.0f && ent->curstate.origin[2] == 0.0f )
-			ent->origin[2] = -0.25f;
+			ent->origin[2] = -0.03f; // just enough for the depth buffer, a bigger step is seen as a line around the box
 
 		// env_glow lamps (kRenderGlow sprites) are too bright/big up close: tune with cl_glow_alpha / cl_glow_size
 		if( ent->curstate.rendermode == kRenderGlow && ent->model && ent->model->type == mod_sprite
