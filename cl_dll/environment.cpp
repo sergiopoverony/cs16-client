@@ -1649,7 +1649,7 @@ int CEnvironment::MsgFunc_GrassInfo(const char *pszName, int iSize, void *pbuf)
 // Grass grows only on textures of material type "grass" (materials/<map>.mat, materials/czero.mat).
 // ---------------------------------------------------------------------------
 static cvar_t *cz_grass = nullptr;
-static cvar_t *cz_grass_light = nullptr; // brightness of the lit grass sprite, 0..255
+static cvar_t *cz_grass_light = nullptr; // brightness of the lit grass sprite: 255 = the light of the floor as is, more = brighter (the lightmap sample is darker than what the world shows)
 
 class CGrassPiece : public CBaseParticle
 {
@@ -1664,7 +1664,7 @@ void CGrassPiece::Think( float flTime )
 {
 	if( cz_grass_light )
 	{
-		const float c = cz_grass_light->value < 0.0f ? 0.0f : ( cz_grass_light->value > 255.0f ? 255.0f : cz_grass_light->value );
+		const float c = cz_grass_light->value < 0.0f ? 0.0f : ( cz_grass_light->value > 2000.0f ? 2000.0f : cz_grass_light->value );
 		m_vColor = Vector( c, c, c );
 	}
 
@@ -1783,7 +1783,7 @@ void CEnvironment::SetupGrass()
 	if( !cz_grass )
 		cz_grass = CVAR_CREATE( "cz_grass", "1", FCVAR_ARCHIVE );
 	if( !cz_grass_light )
-		cz_grass_light = CVAR_CREATE( "cz_grass_light", "255", FCVAR_ARCHIVE );
+		cz_grass_light = CVAR_CREATE( "cz_grass_light", "700", FCVAR_ARCHIVE );
 
 	// GrassInfo comes with every HUD init (respawn too): the grass already standing stays
 	if( m_bGrassPlaced )
