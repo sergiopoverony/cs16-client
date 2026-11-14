@@ -319,7 +319,9 @@ static int __MsgFunc_MapInfo( const char *pszName, int iSize, void *pbuf )
 static int __MsgFunc_LevelLocks( const char *pszName, int iSize, void *pbuf )
 {
 	BufferReader reader( pszName, pbuf, iSize );
-	gEngfuncs.Cvar_SetValue( "cl_levellocks", (float)reader.ReadLong() );
+	// as in the original: the mask of the server is added to the saved one (cl_levellocks is archived), the progress stays after a restart
+	int bits = reader.ReadLong() | (int)gEngfuncs.pfnGetCvarFloat( "cl_levellocks" );
+	gEngfuncs.Cvar_SetValue( "cl_levellocks", (float)bits );
 	return 1;
 }
 
