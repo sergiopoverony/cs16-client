@@ -1,6 +1,6 @@
 diff -u a/menus/NewGame.cpp b/menus/NewGame.cpp
---- a/menus/NewGame.cpp	2026-11-14 11:38:51.722372255 +0000
-+++ b/menus/NewGame.cpp	2026-11-14 11:39:02.131344422 +0000
+--- a/menus/NewGame.cpp	2026-11-14 11:47:47.812953054 +0000
++++ b/menus/NewGame.cpp	2026-11-14 11:47:47.820877592 +0000
 @@ -81,6 +81,9 @@
  
  	EngFuncs::PlayBackgroundTrack( NULL, NULL );
@@ -21,8 +21,8 @@ diff -u a/menus/NewGame.cpp b/menus/NewGame.cpp
  	EngFuncs::ClientCmdF( false, "map %s\n", gMenu.m_gameinfo.trainmap );
  }
 diff -u a/menus/WorldMap.cpp b/menus/WorldMap.cpp
---- a/menus/WorldMap.cpp	2026-11-14 11:38:51.722442368 +0000
-+++ b/menus/WorldMap.cpp	2026-11-14 11:39:02.131507775 +0000
+--- a/menus/WorldMap.cpp	2026-11-14 11:47:47.813127492 +0000
++++ b/menus/WorldMap.cpp	2026-11-14 11:47:47.821073440 +0000
 @@ -23,8 +23,12 @@
  #define WORLDMAP_FONT   "Trebuchet MS"
  #define WORLDMAP_WEIGHT 500
@@ -46,7 +46,7 @@ diff -u a/menus/WorldMap.cpp b/menus/WorldMap.cpp
  	int  MissionAt( int mx, int my ) const;
  	void DrawMissionInfo( int idx );
  	void StartMission();
-@@ -278,6 +283,11 @@
+@@ -280,6 +285,11 @@
  	return -1;
  }
  
@@ -58,7 +58,7 @@ diff -u a/menus/WorldMap.cpp b/menus/WorldMap.cpp
  // the mission of the map that is loaded now, the first one otherwise
  int CMenuWorldMap::CurrentMission() const
  {
-@@ -369,7 +379,8 @@
+@@ -371,7 +381,8 @@
  		for( int i = 0; i < g_iMissionCount; i++ )
  		{
  			const WorldMapMission_t &m = g_Missions[i];
@@ -68,7 +68,7 @@ diff -u a/menus/WorldMap.cpp b/menus/WorldMap.cpp
  			Image( mark, m.x, m.y + 5, 6, 6 );
  			Text( S( std::string( m.prefix ) + "_TITLE" ), m.x + 10, m.y, m.w, m.h,
  				i == hover ? PackRGBA( 255, 255, 0, 255 ) : white, 15, QM_LEFT );
-@@ -471,7 +482,7 @@
+@@ -473,7 +484,7 @@
  	if( !m_bSelect )
  	{
  		int hit = MissionAt( mx, my );
