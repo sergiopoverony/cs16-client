@@ -50,6 +50,13 @@ int DLLEXPORT HUD_AddEntity( int type, struct cl_entity_s *ent, const char *mode
 			&& ent->model && ent->model->type == mod_studio && ent != gEngfuncs.GetViewModel() )
 			return 0;
 
+		// CZ:DS: a brush with the "solid" render mode whose top is exactly on the floor (the black box around the lift that
+		// raises the player in cz_fastline1/2) flickers through the floor. Put it a bit lower, the floor hides it then.
+		// Only when it stands still and is not moved yet.
+		if( ent->model && ent->model->type == mod_brush && ent->curstate.rendermode == kRenderTransAlpha
+			&& fabs( ent->origin[2] - ent->curstate.origin[2] ) < 0.01f )
+			ent->origin[2] = ent->curstate.origin[2] - 0.25f;
+
 		// env_glow lamps (kRenderGlow sprites) are too bright/big up close: tune with cl_glow_alpha / cl_glow_size
 		if( ent->curstate.rendermode == kRenderGlow && ent->model && ent->model->type == mod_sprite
 			&& ent->index > 0 && ent->index < 4096 )
