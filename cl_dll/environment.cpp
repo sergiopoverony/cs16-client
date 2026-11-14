@@ -1654,6 +1654,9 @@ class CGrassPiece : public CBaseParticle
 {
 public:
 	void Think( float flTime ) override;
+	// Think already zeroes the brightness of the pieces outside the view cone and beyond the fade distance;
+	// the depth buffer hides the rest, so no PVS / frustum test (it rejected every piece)
+	bool CheckVisibility() override { return m_flBrightness > 0.0f; }
 };
 
 void CGrassPiece::Think( float flTime )
