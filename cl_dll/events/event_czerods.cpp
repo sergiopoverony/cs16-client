@@ -96,7 +96,6 @@ void EV_FireCamera( event_args_t *args )
 }
 void EV_FireFiberOpticCamera( event_args_t *args )
 {
-	ConsolePrint( "FIRE FIBER OPTIC CAMERA !!! !!! !!!\n");
 }
 // the shield with the pistol (v_shield_r.mdl): the server sends the punch angles * 10000000, the sounds are of the Five-seveN
 void EV_FireShieldGun( event_args_t *args )

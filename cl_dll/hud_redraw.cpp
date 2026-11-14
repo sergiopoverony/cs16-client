@@ -118,7 +118,6 @@ int CHud :: Redraw( float flTime, int intermission )
 				char cmd[600];
 				snprintf( cmd, sizeof( cmd ), "music \"%s\" \"%s\"\n", g_szCzMusic[0], g_szCzMusic[1] );
 				gEngfuncs.pfnClientCmd( cmd );
-				gEngfuncs.Con_Printf( "cz_music: start at %.2f (map drawn since %.2f)\n", flTime, g_flCzMapDrawn );
 				g_bCzMusicPending = false;
 			}
 		}
