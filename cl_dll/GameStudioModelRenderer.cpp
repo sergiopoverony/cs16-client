@@ -764,6 +764,10 @@ int CGameStudioModelRenderer::StudioDrawPlayer(int flags, entity_state_t *pplaye
 	int iret = 0;
 	bool isLocalPlayer = false;
 
+	// CZ:DS: the own body must not be seen (the camera of a cut scene shows it otherwise), only in the third person view
+	if (IEngineStudio.GetCurrentEntity() == gEngfuncs.GetLocalPlayer() && !CL_IsThirdPerson())
+		return 0;
+
 	m_pplayer = pplayer;
 
 	if (m_bLocal && IEngineStudio.GetCurrentEntity() == gEngfuncs.GetLocalPlayer())
