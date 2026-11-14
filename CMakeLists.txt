@@ -95,7 +95,7 @@ if(BUILD_MAINUI)
 		if(NOT czds_patch_res EQUAL 0)
 			message(FATAL_ERROR "CZ:DS menu patch failed")
 		endif()
-		# the menu of cs16-client has its own "View Readme" button, the FWGS one has not: hide it in the mod
+		# the menu of the game only (not for the PR): Save Game and World Map buttons in the order of the original menu, the training room in New Game, "View Readme" hidden
 		execute_process(COMMAND ${PATCH_PROGRAM} -p1 -F3 -i ${CMAKE_CURRENT_SOURCE_DIR}/mainui_extra/czds_mainui_cs16.patch
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/mainui_cpp RESULT_VARIABLE czds_patch2_res)
 		if(NOT czds_patch2_res EQUAL 0)
