@@ -58,65 +58,33 @@ void CFrustum::CalculateFrustum()
 	float modl[16];
 	gEngfuncs.pTriAPI->GetMatrix(GL_MODELVIEW_MATRIX, modl);
 
-	float frustum[16]{};
+	// clip = proj * modelview; both are OpenGL column-major, element (row r, column c) is [c * 4 + r]
+	float clip[16];
+	for (int c = 0; c < 4; ++c)
+	{
+		for (int r = 0; r < 4; ++r)
+		{
+			float sum = 0;
+			for (int k = 0; k < 4; ++k)
+				sum += proj[k * 4 + r] * modl[c * 4 + k];
+			clip[c * 4 + r] = sum;
+		}
+	}
 
-	//TODO: clean this up. It's a 4x4 matrix multiplication.
-	frustum[0] = proj[0] * modl[0] + proj[1] * modl[4] + proj[2] * modl[8] + proj[3] * modl[12];
-	frustum[1] = proj[1] * modl[0] + proj[1] * modl[5] + proj[2] * modl[9] + proj[3] * modl[13];
-	frustum[2] = proj[2] * modl[0] + proj[1] * modl[6] + proj[2] * modl[10] + proj[3] * modl[14];
-	frustum[3] = modl[3] * proj[0] + modl[1] * proj[7] + modl[2] * proj[11] + modl[3] * proj[15];
+	// the planes are the 4th row of clip plus or minus the other rows
+	const auto setPlane = [&](int side, int row, float sign)
+	{
+		for (int i = 0; i < 4; ++i)
+			g_flFrustum[side][i] = clip[i * 4 + 3] + sign * clip[i * 4 + row];
+		NormalizeFrustumPlane(g_flFrustum, side);
+	};
 
-	frustum[4] = proj[0] * modl[4] + proj[4] * modl[5] + proj[6] * modl[8] + proj[7] * modl[12];
-	frustum[5] = proj[1] * modl[4] + proj[5] * modl[5] + proj[6] * modl[9] + proj[7] * modl[13];
-	frustum[6] = proj[2] * modl[4] + proj[5] * modl[6] + proj[6] * modl[10] + proj[7] * modl[14];
-	frustum[7] = modl[3] * proj[4] + modl[5] * proj[7] + modl[6] * proj[11] + modl[7] * proj[15];
-
-	frustum[8] = proj[0] * modl[8] + proj[4] * modl[9] + proj[8] * modl[10] + proj[12] * modl[11];
-	frustum[9] = proj[1] * modl[8] + proj[5] * modl[9] + proj[9] * modl[10] + proj[11] * modl[13];
-	frustum[10] = proj[2] * modl[8] + proj[6] * modl[9] + proj[10] * modl[10] + proj[11] * modl[14];
-	frustum[11] = modl[3] * proj[8] + modl[7] * proj[9] + modl[10] * proj[11] + modl[11] * proj[15];
-
-	frustum[12] = proj[0] * modl[12] + proj[4] * modl[13] + proj[8] * modl[14] + proj[12] * modl[15];
-	frustum[13] = proj[1] * modl[12] + proj[5] * modl[13] + proj[9] * modl[14] + proj[13] * modl[15];
-	frustum[14] = proj[2] * modl[12] + proj[6] * modl[13] + proj[10] * modl[14] + proj[14] * modl[15];
-	frustum[15] = modl[3] * proj[12] + proj[7] * modl[13] + proj[11] * modl[14] + proj[15] * modl[15];
-
-	g_flFrustum[RIGHT][0] = frustum[3] - frustum[0];
-	g_flFrustum[RIGHT][1] = frustum[7] - frustum[4];
-	g_flFrustum[RIGHT][2] = frustum[11] - frustum[8];
-	g_flFrustum[RIGHT][3] = frustum[15] - frustum[12];
-
-	NormalizeFrustumPlane(g_flFrustum, RIGHT);
-
-	g_flFrustum[LEFT][0] = frustum[0] + frustum[3];
-	g_flFrustum[LEFT][1] = frustum[4] + frustum[7];
-	g_flFrustum[LEFT][2] = frustum[8] + frustum[11];
-	g_flFrustum[LEFT][3] = frustum[12] + frustum[15];
-	NormalizeFrustumPlane(g_flFrustum, LEFT);
-
-	g_flFrustum[BOTTOM][0] = frustum[1] + frustum[3];
-	g_flFrustum[BOTTOM][1] = frustum[5] + frustum[7];
-	g_flFrustum[BOTTOM][2] = frustum[9] + frustum[11];
-	g_flFrustum[BOTTOM][3] = frustum[15] + frustum[13];
-	NormalizeFrustumPlane(g_flFrustum, BOTTOM);
-
-	g_flFrustum[TOP][0] = frustum[3] - frustum[1];
-	g_flFrustum[TOP][1] = frustum[7] - frustum[5];
-	g_flFrustum[TOP][2] = frustum[11] - frustum[9];
-	g_flFrustum[TOP][3] = frustum[15] - frustum[13];
-	NormalizeFrustumPlane(g_flFrustum, TOP);
-
-	g_flFrustum[BACK][0] = frustum[3] - frustum[2];
-	g_flFrustum[BACK][1] = frustum[7] - frustum[6];
-	g_flFrustum[BACK][2] = frustum[11] - frustum[10];
-	g_flFrustum[BACK][3] = frustum[15] - frustum[14];
-	NormalizeFrustumPlane(g_flFrustum, BACK);
-
-	g_flFrustum[FRONT][0] = frustum[2] + frustum[3];
-	g_flFrustum[FRONT][1] = frustum[6] + frustum[7];
-	g_flFrustum[FRONT][2] = frustum[10] + frustum[11];
-	g_flFrustum[FRONT][3] = frustum[14] + frustum[15];
-	NormalizeFrustumPlane(g_flFrustum, FRONT);
+	setPlane(RIGHT, 0, -1.0f);
+	setPlane(LEFT, 0, 1.0f);
+	setPlane(BOTTOM, 1, 1.0f);
+	setPlane(TOP, 1, -1.0f);
+	setPlane(BACK, 2, -1.0f);
+	setPlane(FRONT, 2, 1.0f);
 }
 
 bool CFrustum::PointInsideFrustum(float x, float y, float z)

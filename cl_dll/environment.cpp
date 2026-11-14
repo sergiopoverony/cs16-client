@@ -1853,8 +1853,10 @@ void CEnvironment::CreateGrassPiece( const Vector &origin, const Vector &angles,
 	if( !sprite )
 		return;
 
+	// the original raises the piece 10 units above the floor point
+	const Vector raised( origin.x, origin.y, origin.z + 10.0f );
 	CGrassPiece *pParticle = new CGrassPiece();
-	pParticle->InitializeSprite( origin, angles, sprite, size, 1.0f );
+	pParticle->InitializeSprite( raised, angles, sprite, size, 1.0f );
 	strcpy( pParticle->m_szClassname, "grass" );
 	pParticle->SetCollisionFlags( TRI_WATERTRACE );
 	pParticle->m_flGravity = 0;
